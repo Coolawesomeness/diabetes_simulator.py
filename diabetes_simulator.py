@@ -16,7 +16,7 @@ st.markdown("""
 
 # Sliders for user input
 age = st.slider("Patient Age (years)", 10, 100, 55)
-weight = st.slider("Weight (kg)", 30, 150, 80)
+weight = st.slider("Weight (lbs)", 30, 200, 115)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 med_dose = st.slider("Medication Dose (units)", 0, 150, 50)
 
