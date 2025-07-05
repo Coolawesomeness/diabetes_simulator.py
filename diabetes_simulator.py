@@ -2,8 +2,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 
-st.title("💉 Diabetes Digital Twin Simulator!")
-st.write("Use the sliders to simulate how lifestyle and medication impact glucose levels.")
+st.title("💉 Diabetes Simulator!")
+st.write("Use the sliders to simulate how medication impact glucose levels.")
 
 # Add disclaimer with medication interaction warning
 st.markdown("""
