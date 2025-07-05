@@ -1,12 +1,11 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
-st.markdown(
-    '<meta name="google-site-verification" content="abcdefg123456">',
-    unsafe_allow_html=True
     
-st.title("💉 Diabetes Digital Simulator!")
-st.write("Created by Siddharth Tirumalai")
+st.set_page_config(
+    page_title="Siddharth Tirumalai - Diabetes Simulator",
+    page_icon="💉",
+    layout="centered"
 st.write("Use the sliders and survey to simulate how lifestyle, medication, and diet impact glucose levels.")
 
 # Health status selection
