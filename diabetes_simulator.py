@@ -69,7 +69,7 @@ if status in ("Diabetic", "Pre-diabetic"):
 
     # Diet Survey
     st.subheader("📝 Diet Habits Survey")
-     st.write("Please answer the following questions regarding your diet:")
+    st.write("Please answer the following questions regarding your diet:")
 
     veg_fruit = st.selectbox(
         "How many servings of vegetables and fruits do you eat daily?",
