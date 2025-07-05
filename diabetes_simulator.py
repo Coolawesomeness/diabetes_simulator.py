@@ -2,12 +2,12 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 
-st.title("💉 Diabetes Digital Twin Simulator!")
-st.write("Use the sliders to simulate how lifestyle and medication impact glucose.")
+st.title("💉 Diabetes Simulator")
+st.write("Use the sliders to simulate how medication impacts glucose based on age, weight, and daily exercise.")
 
 # Sliders for user input
 age = st.slider("Patient Age (years)", 10, 100, 55)
-weight = st.slider("Weight (kg)", 30, 150, 80)
+weight = st.slider("Weight (lbs)", 30, 150, 80)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 med_dose = st.slider("Medication Dose (units)", 0, 150, 50)
 
