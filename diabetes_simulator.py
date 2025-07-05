@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from random import uniform
 
 st.title("💉 Diabetes Digital Simulator!")
+st.write("Created by Siddharth Tirumalai")
 st.write("Use the sliders and survey to simulate how lifestyle, medication, and diet impact glucose levels.")
 
 # Health status selection
