@@ -4,13 +4,13 @@ from random import uniform
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
+    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
 
 # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Twin Simulator")
+st.title("📈 Diabetes Digital Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
 Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
@@ -26,7 +26,7 @@ Always consult your healthcare provider before making medical decisions based on
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
 med_dose = st.slider("Medication Dose (mg/day)", 0, 2000, 500)
-weight = st.slider("Weight (kg)", 30, 200, 70)
+weight = st.slider("Weight (lbs)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
@@ -79,15 +79,23 @@ chol_options = [
 bp_meds = st.multiselect("Select Blood Pressure Medications:", bp_options)
 chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
 
-# ------------------ DIET QUESTIONNAIRE ------------------ #
-st.subheader("🍽️ Diet Quality Questionnaire")
+# ------------------ DIET SURVEY ------------------ #
+st.subheader("🍽️ Diet Quality Survey")
+
+veg_servings = st.slider("How many servings of vegetables per week?", 0, 70, 21)
+fruit_servings = st.slider("How many servings of fruits per week?", 0, 70, 14)
+sugary_snacks = st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
+fast_food = st.slider("How many fast food meals per week?", 0, 14, 3)
+cook_freq = st.slider("How often do you cook meals at home per week?", 0, 21, 5)
+
 diet_score = 0
-diet_score += st.slider("How many servings of vegetables per day?", 0, 10, 3)
-diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
-diet_score -= st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
-diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
-diet_score += st.slider("How often do you cook meals at home per week?", 0, 21, 5)
-diet_score = max(0, diet_score)  # prevent negatives
+diet_score += (veg_servings / 7) * 3
+diet_score += (fruit_servings / 7) * 2
+diet_score -= sugary_snacks
+diet_score -= fast_food
+diet_score += (cook_freq / 7) * 2  # positive impact for cooking frequency
+
+diet_score = max(0, diet_score)  # prevent negative diet score
 
 # ------------------ SIMULATION ------------------ #
 if st.button("⏱️ Run Simulation"):
