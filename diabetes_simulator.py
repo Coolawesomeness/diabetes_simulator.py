@@ -76,8 +76,8 @@ chol_options = [
     "PCSK9 Inhibitors", "Omega-3 Fatty Acids"
 ]
 
-bp_med = st.selectbox("Are you on blood pressure medication?", bp_options)
-chol_med = st.selectbox("Are you on cholesterol medication?", chol_options)
+bp_meds = st.multiselect("Select Blood Pressure Medications:", bp_options)
+chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
 
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
@@ -119,10 +119,8 @@ if st.button("⏱️ Run Simulation"):
         med_effect *= 0.8
 
     # Blood pressure & cholesterol meds (small raise in glucose)
-    if bp_med != "None":
-        base_glucose += 5
-    if chol_med != "None":
-        base_glucose += 7
+    base_glucose += 5 * len([med for med in bp_meds if med != "None"])
+    base_glucose += 7 * len([med for med in chol_meds if med != "None"])
 
     # Adjust for lifestyle
     diet_factor = max(0.5, 1 - 0.01 * diet_score)
@@ -156,5 +154,3 @@ if st.button("⏱️ Run Simulation"):
     ax.set_title("Simulated Blood Glucose Over 7 Days")
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
-
-
