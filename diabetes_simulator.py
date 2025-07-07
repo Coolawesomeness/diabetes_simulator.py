@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
+import math
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
@@ -57,7 +58,6 @@ prediabetic_meds = {
     "Intermittent Fasting Protocols": 0.25
 }
 
-# Show medication options depending on status
 if diagnosis == "Diabetic":
     selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
 elif diagnosis == "Pre-diabetic":
@@ -69,7 +69,7 @@ med_doses = {}
 for med in selected_meds:
     med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
 
-# Expanded medication classes for BP and cholesterol
+# ------------------ OTHER MEDICATIONS ------------------ #
 bp_options = [
     "None", "Beta Blockers", "ACE Inhibitors", "Angiotensin II Receptor Blockers (ARBs)", "Calcium Channel Blockers",
     "Diuretics", "Alpha Blockers", "Vasodilators", "Central Agonists"
@@ -119,17 +119,13 @@ if st.button("⏱️ Run Simulation"):
     # Base glucose estimate
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # Medication effect calculation
+    # Smarter medication model: sigmoid-like diminishing effect
     med_effect = 0
     for med in selected_meds:
-        base_effect = 0
-        if diagnosis == "Diabetic":
-            base_effect = medication_types.get(med, 0)
-        elif diagnosis == "Pre-diabetic":
-            base_effect = prediabetic_meds.get(med, 0)
-
-        # Apply effectiveness scaled by dose
-        med_effect += base_effect * (med_doses.get(med, 0) / 1000)
+        dose = med_doses.get(med, 0)
+        base = medication_types.get(med, 0) if diagnosis == "Diabetic" else prediabetic_meds.get(med, 0)
+        scaled_effect = base * (1 - math.exp(-dose / 500))  # sigmoid-style curve
+        med_effect += scaled_effect
 
     if diagnosis == "Pre-diabetic":
         med_effect *= 0.7
@@ -139,23 +135,24 @@ if st.button("⏱️ Run Simulation"):
     if len(selected_meds) > 1:
         med_effect *= 0.8
 
-    # Add BP and cholesterol effects scaled by dose
+    # BP/cholesterol raise
     base_glucose += sum(5 * (dose / 1000) for dose in bp_doses.values())
     base_glucose += sum(7 * (dose / 1000) for dose in chol_doses.values())
 
-    # Flip diet logic: better diet increases insulin sensitivity
+    # Diet-adjusted insulin sensitivity
     diet_factor = min(1.5, 1 + 0.01 * diet_score)
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
-    # Final glucose estimation
+    # Final estimates
     avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
     avg_glucose /= adjusted_sensitivity
 
-    # Simulate over 7 days
+    fasting_glucose = avg_glucose - 10
+    post_meal_glucose = avg_glucose + 30
+
     glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-    # Estimate HbA1c
     estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
     if estimated_hba1c < 5.7:
         diagnosis_label = "Normal"
@@ -166,6 +163,8 @@ if st.button("⏱️ Run Simulation"):
 
     # ------------------ RESULTS ------------------ #
     st.subheader("📊 Simulation Results")
+    st.metric("Fasting Glucose (mg/dL)", f"{round(fasting_glucose,1)}")
+    st.metric("2-Hour Post-Meal Glucose (mg/dL)", f"{round(post_meal_glucose,1)}")
     st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
     st.metric("Estimated HbA1c (%)", f"{estimated_hba1c}", diagnosis_label)
 
