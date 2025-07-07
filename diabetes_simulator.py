@@ -1,20 +1,17 @@
 
-python
-Copy
-Edit
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
+    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
 
 # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Twin Simulator")
+st.title("📈 Diabetes Digital Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
 Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
@@ -29,7 +26,7 @@ Always consult your healthcare provider before making medical decisions based on
 
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
-weight = st.slider("Weight (kg)", 30, 200, 70)
+weight = st.slider("Weight (lbs)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
