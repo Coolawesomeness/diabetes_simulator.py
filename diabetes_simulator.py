@@ -4,13 +4,13 @@ from random import uniform
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
+    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
 
 # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Simulator")
+st.title("📈 Diabetes Digital Twin Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
 Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
@@ -99,9 +99,11 @@ diet_score += st.slider("How many servings of vegetables per week?", 0, 70, 21)
 diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
 diet_score -= st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
 diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
-diet_score += st.slider("How often do you cook meals at home per week?", 0, 21, 5)
-diet_score = max(0, diet_score)  # prevent negatives
 
+cooked_meals = st.slider("How many meals do you cook at home per week?", 0, 21, 5)
+healthy_cooking = st.radio("Are your home-cooked meals mostly healthy?", ["Yes", "No"])
+if healthy_cooking == "Yes":
+    diet_score += cooked_meals * 0.5
 # ------------------ SIMULATION ------------------ #
 if st.button("⏱️ Run Simulation"):
     st.success("Simulation started!")
