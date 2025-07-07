@@ -1,226 +1,132 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
-    
-st.title("Diabetes Simulator")
-st.write("Created By Siddharth Tirumalai")
-st.write("Use the sliders and survey to simulate how lifestyle, medication, and diet impact glucose levels.")
 
-# Health status selection
-status = st.radio(
-    "What is your blood glucose status?",
-    ("Diabetic", "Pre-diabetic", "Non-diabetic")
+# ------------------ PAGE CONFIG ------------------ #
+st.set_page_config(
+    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
+    page_icon="📈",
+    layout="centered"
 )
 
-st.info("""
-**Simulation Details:**
-- 🟥 Diabetic: Full simulation with medication and insulin sensitivity.
-- 🟧 Pre-diabetic: Moderate glucose drop with adjusted sensitivity.
-- 🟩 Non-diabetic: Simulation disabled.
+# ------------------ TITLE & DISCLAIMER ------------------ #
+st.title("📈 Diabetes Digital Twin Simulator")
+st.markdown("""
+**Created by: Siddharth Tirumalai**  
+Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
 """)
 
-if status == "Non-diabetic":
-    st.warning("⚠️ This simulation is not intended for individuals without blood sugar regulation issues.")
+st.warning("""
+This simulation provides estimated trends in glucose and HbA1c based on user input. 
+It assumes you are only taking medications related to blood sugar, blood pressure, or cholesterol.
+If you are on other drugs (e.g., corticosteroids, antidepressants, antipsychotics), results may vary significantly.
+Always consult your healthcare provider before making medical decisions based on this simulation.
+""")
 
-if status in ("Diabetic", "Pre-diabetic"):
-    # Disclaimer
-    st.markdown("""
-    > ⚠️ **Disclaimer:** This simulation is for educational purposes only and is intended for individuals with diabetes or pre-diabetes who are **not** taking other medications that may affect blood sugar levels.
-    >
-    > It assumes a single anti-diabetic medication is being used. Other drugs such as **steroids**, **beta-blockers**, **diuretics**, and **antipsychotics** can interfere with glucose control.
-    >
-    > Always consult with a healthcare provider before making any treatment changes.
-    """)
+# ------------------ USER INFO ------------------ #
+age = st.slider("Patient Age (years)", 10, 100, 45)
+weight = st.slider("Weight (kg)", 30, 200, 70)
+exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
+insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
-    # Inputs
-    age = st.slider("Patient Age (years)", 10, 100, 55)
-    weight = st.slider("Weight (lbs)", 30, 200, 117)
-    exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
-    med_dose = st.slider("Medication Dose (units)", 0, 150, 50)
+# ------------------ DIAGNOSIS ------------------ #
+diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
 
-    med_type = st.selectbox(
-        "Medication Type (for blood glucose control)",
-        [
-            "Insulin",
-            "Sulfonylureas",
-            "Metformin",
-            "SGLT2 Inhibitors",
-            "GLP-1 Receptor Agonists",
-            "Thiazolidinediones (TZDs)",
-            "DPP-4 Inhibitors",
-            "Meglitinides",
-            "Alpha-glucosidase Inhibitors",
-            "Amylin Analogs"
-        ]
-    )
+# ------------------ MEDICATION OPTIONS ------------------ #
+medication_types = {
+    "Insulin": 1.00,
+    "Sulfonylureas": 0.70,
+    "Metformin": 0.50,
+    "GLP-1 Receptor Agonists": 0.60,
+    "SGLT2 Inhibitors": 0.40,
+    "Thiazolidinediones (TZDs)": 0.45,
+    "DPP-4 Inhibitors": 0.30,
+    "Meglitinides": 0.55,
+    "Alpha-glucosidase Inhibitors": 0.35,
+    "Amylin Analogs": 0.25
+}
 
-    # Medication effectiveness dictionary
-    effectiveness_factors = {
-        "Insulin": 1.00,
-        "Sulfonylureas": 0.70,
-        "Metformin": 0.50,
-        "SGLT2 Inhibitors": 0.40,
-        "GLP-1 Receptor Agonists": 0.60,
-        "Thiazolidinediones (TZDs)": 0.45,
-        "DPP-4 Inhibitors": 0.30,
-        "Meglitinides": 0.55,
-        "Alpha-glucosidase Inhibitors": 0.35,
-        "Amylin Analogs": 0.25
-    }
+prediabetic_meds = {
+    "Metformin": 0.40,
+    "Lifestyle Coaching": 0.30,
+    "Weight Loss Agents": 0.20
+}
 
-    # Diet Survey
-    st.subheader("📝 Diet Habits Survey")
-    st.write("Please answer the following questions regarding your diet:")
-
-    veg_fruit = st.selectbox(
-        "How many servings of vegetables and fruits do you eat daily?",
-        [
-            "0 servings",
-            "1-2 servings",
-            "3-4 servings",
-            "5 or more servings"
-        ]
-    )
-    veg_fruit_score = {
-        "0 servings": 10,
-        "1-2 servings": 5,
-        "3-4 servings": 2,
-        "5 or more servings": 0
-    }[veg_fruit]
-
-    sugary_drinks = st.selectbox(
-        "How many sugary drinks (soda, sweet tea, juice) do you consume per week?",
-        [
-            "More than 7",
-            "4-7",
-            "1-3",
-            "None"
-        ]
-    )
-    sugary_drinks_score = {
-        "More than 7": 10,
-        "4-7": 7,
-        "1-3": 3,
-        "None": 0
-    }[sugary_drinks]
-
-    snacks_fastfood = st.selectbox(
-        "How often do you eat processed snacks or fast food per week?",
-        [
-            "More than 5 times",
-            "3-5 times",
-            "1-2 times",
-            "Rarely or never"
-        ]
-    )
-    snacks_fastfood_score = {
-        "More than 5 times": 10,
-        "3-5 times": 7,
-        "1-2 times": 3,
-        "Rarely or never": 0
-    }[snacks_fastfood]
-
-    refined_grains = st.selectbox(
-        "How often do you consume refined grains (white bread, white rice) instead of whole grains?",
-        [
-            "Mostly refined grains",
-            "About half refined, half whole grains",
-            "Mostly whole grains"
-        ]
-    )
-    refined_grains_score = {
-        "Mostly refined grains": 10,
-        "About half refined, half whole grains": 5,
-        "Mostly whole grains": 0
-    }[refined_grains]
-
-    meal_patterns = st.selectbox(
-        "How often do you skip meals or binge eat late at night?",
-        [
-            "Often",
-            "Sometimes",
-            "Rarely or never"
-        ]
-    )
-    meal_patterns_score = {
-        "Often": 5,
-        "Sometimes": 3,
-        "Rarely or never": 0
-    }[meal_patterns]
-
-    portion_control = st.selectbox(
-        "Do you track or control your portion sizes?",
-        [
-            "No, I don’t track portions",
-            "Sometimes",
-            "Yes, regularly"
-        ]
-    )
-    portion_control_score = {
-        "No, I don’t track portions": 5,
-        "Sometimes": 2,
-        "Yes, regularly": 0
-    }[portion_control]
-
-    diet_quality = (
-        veg_fruit_score +
-        sugary_drinks_score +
-        snacks_fastfood_score +
-        refined_grains_score +
-        meal_patterns_score +
-        portion_control_score
-    )
-
-    if diet_quality <= 10:
-        st.success("✅ Your diet appears quite healthy!")
-    elif diet_quality <= 30:
-        st.info("⚠️ Your diet could be improved. Consider adding more fiber and reducing sugar.")
-    else:
-        st.warning("🚨 Your diet may significantly raise your glucose levels. Improvements recommended.")
-
-    st.write(f"**Estimated Diet Impact Score:** {diet_quality} (higher = worse)")
-
-    # Insulin sensitivity slider
-    insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.1, 2.0, 1.0)
-
-    # Adjust insulin sensitivity based on diet quality
-    diet_factor = max(0.5, 1 - 0.01 * diet_quality)  # minimum 0.5
-    adjusted_insulin_sensitivity = insulin_sensitivity * diet_factor
-
-    if status == "Diabetic":
-        base_glucose = 180
-        med_effect_scale = 1.0
-    else:
-        base_glucose = 140
-        med_effect_scale = 0.5
-
-    if st.button("Run Simulation"):
-        st.success("✅ Simulation started!")
-
-        med_effectiveness = effectiveness_factors[med_type] * med_effect_scale * adjusted_insulin_sensitivity
-
-        adjusted_glucose = (
-            base_glucose
-            - (med_dose * med_effectiveness)
-            - (exercise * 0.2)
-            + (weight * 0.1)
-            + diet_quality
-        )
-        glucose_levels = [adjusted_glucose + uniform(-10, 10) for _ in range(7)]
-        avg_glucose = sum(glucose_levels) / len(glucose_levels)
-
-        estimated_hba1c = (avg_glucose + 46.7) / 28.7
-
-        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        fig, ax = plt.subplots()
-        ax.plot(days, glucose_levels, marker='o', color='blue')
-        ax.set_title(f"Simulated Blood Glucose Over a Week ({status})")
-        ax.set_ylabel("Glucose (mg/dL)")
-        st.pyplot(fig)
-
-        st.metric("📈 Average Glucose", f"{avg_glucose:.1f} mg/dL")
-        st.metric("🧪 Estimated HbA1c", f"{estimated_hba1c:.2f} %")
-        st.metric("⚖️ Adjusted Insulin Sensitivity", f"{adjusted_insulin_sensitivity:.2f} (1 = normal)")
-
+# Show medication options depending on status
+if diagnosis == "Diabetic":
+    selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
+elif diagnosis == "Pre-diabetic":
+    selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
 else:
-    st.info("ℹ️ Select 'Diabetic' or 'Pre-diabetic' above to run the simulation.")
+    selected_meds = []
+
+# Other medications
+bp_med = st.selectbox("Are you on blood pressure medication?", ["None", "Beta Blockers", "ACE Inhibitors", "Diuretics"])
+chol_med = st.selectbox("Are you on cholesterol medication?", ["None", "Statins", "Fibrates", "Niacin"])
+
+# ------------------ DIET QUESTIONNAIRE ------------------ #
+st.subheader("🍽️ Diet Quality Questionnaire")
+diet_score = 0
+diet_score += st.slider("How many servings of vegetables per day?", 0, 10, 3)
+diet_score += st.slider("How many servings of fruits per day?", 0, 10, 2)
+diet_score -= st.slider("How many sugary snacks or drinks per day?", 0, 10, 2)
+diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
+diet_score += st.slider("How often do you cook meals at home per week?", 0, 21, 5)
+diet_score = max(0, diet_score)  # prevent negatives
+
+# ------------------ SIMULATION ------------------ #
+if st.button("⏱️ Run Simulation"):
+    st.success("Simulation started!")
+
+    # Base glucose estimate
+    base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
+
+    # Adjustments
+    med_effect = 0
+    for med in selected_meds:
+        if diagnosis == "Diabetic":
+            med_effect += medication_types.get(med, 0)
+        else:
+            med_effect += prediabetic_meds.get(med, 0)
+
+    # Adjust for multiple medications (diminishing returns)
+    med_effect = med_effect * 0.8 if len(selected_meds) > 1 else med_effect
+
+    # Blood pressure & cholesterol meds (small raise in glucose)
+    if bp_med != "None":
+        base_glucose += 5
+    if chol_med != "None":
+        base_glucose += 7
+
+    # Adjust for lifestyle
+    diet_factor = max(0.5, 1 - 0.01 * diet_score)  # worse diet = lower sensitivity
+    adjusted_sensitivity = insulin_sensitivity * diet_factor
+
+    # Final glucose estimation
+    avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
+    avg_glucose /= adjusted_sensitivity
+
+    # Simulate over 7 days
+    glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    # Estimate HbA1c
+    estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
+    if estimated_hba1c < 5.7:
+        diagnosis_label = "Normal"
+    elif estimated_hba1c < 6.5:
+        diagnosis_label = "Pre-diabetic"
+    else:
+        diagnosis_label = "Diabetic"
+
+    # ------------------ RESULTS ------------------ #
+    st.subheader("📊 Simulation Results")
+    st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
+    st.metric("Estimated HbA1c (%)", f"{estimated_hba1c}", diagnosis_label)
+
+    fig, ax = plt.subplots()
+    ax.plot(days, glucose_levels, marker='o', color='blue')
+    ax.set_title("Simulated Blood Glucose Over 7 Days")
+    ax.set_ylabel("Glucose (mg/dL)")
+    st.pyplot(fig)
+
