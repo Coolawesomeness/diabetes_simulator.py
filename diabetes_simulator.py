@@ -1,4 +1,3 @@
-
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
@@ -58,14 +57,6 @@ prediabetic_meds = {
     "Intermittent Fasting Protocols": 0.25
 }
 
-# Define meds that require dose input
-meds_with_dose = {
-    "Insulin", "Sulfonylureas", "Metformin", "GLP-1 Receptor Agonists", 
-    "SGLT2 Inhibitors", "Thiazolidinediones (TZDs)", "DPP-4 Inhibitors", 
-    "Meglitinides", "Alpha-glucosidase Inhibitors", "Amylin Analogs",
-    "Acarbose", "Weight Loss Agents"
-}
-
 # Show medication options depending on status
 if diagnosis == "Diabetic":
     selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
@@ -74,11 +65,9 @@ elif diagnosis == "Pre-diabetic":
 else:
     selected_meds = []
 
-# Create sliders for dose input only for meds that require dosing
 med_doses = {}
 for med in selected_meds:
-    if med in meds_with_dose:
-        med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
+    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
 
 # Expanded medication classes for BP and cholesterol
 bp_options = [
@@ -93,23 +82,25 @@ chol_options = [
 bp_meds = st.multiselect("Select Blood Pressure Medications:", bp_options)
 chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
 
+bp_doses = {}
+for med in bp_meds:
+    if med != "None":
+        bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, 2000, 500)
+
+chol_doses = {}
+for med in chol_meds:
+    if med != "None":
+        chol_doses[med] = st.slider(f"Dose for Cholesterol Med: {med} (mg/day)", 0, 2000, 500)
+
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
-
-veg_servings = st.slider("How many servings of vegetables per week?", 0, 70, 21)
-fruit_servings = st.slider("How many servings of fruits per week?", 0, 70, 14)
-sugary_snacks = st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
-fast_food = st.slider("How many fast food meals per week?", 0, 14, 3)
-cook_freq = st.slider("How often do you cook meals at home per week?", 0, 21, 5)
-
 diet_score = 0
-diet_score += (veg_servings / 7) * 3
-diet_score += (fruit_servings / 7) * 2
-diet_score -= sugary_snacks
-diet_score -= fast_food
-diet_score += (cook_freq / 7) * 2  # positive impact for cooking frequency
-
-diet_score = max(0, diet_score)  # prevent negative diet score
+diet_score += st.slider("How many servings of vegetables per week?", 0, 70, 21)
+diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
+diet_score -= st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
+diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
+diet_score += st.slider("How often do you cook meals at home per week?", 0, 21, 5)
+diet_score = max(0, diet_score)  # prevent negatives
 
 # ------------------ SIMULATION ------------------ #
 if st.button("⏱️ Run Simulation"):
@@ -118,7 +109,7 @@ if st.button("⏱️ Run Simulation"):
     # Base glucose estimate
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # Calculate total medication effect scaled by individual doses or fixed for non-dose meds
+    # Medication effect calculation
     med_effect = 0
     for med in selected_meds:
         base_effect = 0
@@ -127,25 +118,20 @@ if st.button("⏱️ Run Simulation"):
         elif diagnosis == "Pre-diabetic":
             base_effect = prediabetic_meds.get(med, 0)
 
-        if med in meds_with_dose:
-            med_effect += base_effect * (med_doses.get(med, 0) / 1000)
-        else:
-            # No dose slider, add full base effect fixed
-            med_effect += base_effect
+        # Apply effectiveness scaled by dose
+        med_effect += base_effect * (med_doses.get(med, 0) / 1000)
 
-    # Scale med effect by diagnosis sensitivity
     if diagnosis == "Pre-diabetic":
-        med_effect *= 0.7  # generally less sensitive to meds
+        med_effect *= 0.7
     elif diagnosis == "Non-diabetic":
-        med_effect *= 0.3  # very low effect expected
+        med_effect *= 0.3
 
-    # Diminishing returns for multiple meds
     if len(selected_meds) > 1:
         med_effect *= 0.8
 
-    # Blood pressure & cholesterol meds (small raise in glucose)
-    base_glucose += 5 * len([med for med in bp_meds if med != "None"])
-    base_glucose += 7 * len([med for med in chol_meds if med != "None"])
+    # Add BP and cholesterol effects scaled by dose
+    base_glucose += sum(5 * (dose / 1000) for dose in bp_doses.values())
+    base_glucose += sum(7 * (dose / 1000) for dose in chol_doses.values())
 
     # Adjust for lifestyle
     diet_factor = max(0.5, 1 - 0.01 * diet_score)
