@@ -1,16 +1,20 @@
+
+python
+Copy
+Edit
 import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 
-# ------------------ PAGE ------------------ #
+# ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
+    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
 
 # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Simulator")
+st.title("📈 Diabetes Digital Twin Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
 Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
@@ -25,7 +29,7 @@ Always consult your healthcare provider before making medical decisions based on
 
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
-weight = st.slider("Weight (lbs)", 30, 200, 70)
+weight = st.slider("Weight (kg)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
@@ -57,6 +61,14 @@ prediabetic_meds = {
     "Intermittent Fasting Protocols": 0.25
 }
 
+# Define meds that require dose input
+meds_with_dose = {
+    "Insulin", "Sulfonylureas", "Metformin", "GLP-1 Receptor Agonists", 
+    "SGLT2 Inhibitors", "Thiazolidinediones (TZDs)", "DPP-4 Inhibitors", 
+    "Meglitinides", "Alpha-glucosidase Inhibitors", "Amylin Analogs",
+    "Acarbose", "Weight Loss Agents"
+}
+
 # Show medication options depending on status
 if diagnosis == "Diabetic":
     selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
@@ -65,10 +77,11 @@ elif diagnosis == "Pre-diabetic":
 else:
     selected_meds = []
 
-# Create sliders for dose input for each selected medication
+# Create sliders for dose input only for meds that require dosing
 med_doses = {}
 for med in selected_meds:
-    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
+    if med in meds_with_dose:
+        med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
 
 # Expanded medication classes for BP and cholesterol
 bp_options = [
@@ -108,7 +121,7 @@ if st.button("⏱️ Run Simulation"):
     # Base glucose estimate
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # Calculate total medication effect scaled by individual doses
+    # Calculate total medication effect scaled by individual doses or fixed for non-dose meds
     med_effect = 0
     for med in selected_meds:
         base_effect = 0
@@ -116,7 +129,12 @@ if st.button("⏱️ Run Simulation"):
             base_effect = medication_types.get(med, 0)
         elif diagnosis == "Pre-diabetic":
             base_effect = prediabetic_meds.get(med, 0)
-        med_effect += base_effect * (med_doses.get(med, 0) / 1000)
+
+        if med in meds_with_dose:
+            med_effect += base_effect * (med_doses.get(med, 0) / 1000)
+        else:
+            # No dose slider, add full base effect fixed
+            med_effect += base_effect
 
     # Scale med effect by diagnosis sensitivity
     if diagnosis == "Pre-diabetic":
