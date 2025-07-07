@@ -25,7 +25,7 @@ Always consult your healthcare provider before making medical decisions based on
 
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
-weight = st.slider("Weight (lbs)", 30, 200, 70)
+weight = st.slider("Weight (kg)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
@@ -94,6 +94,13 @@ for med in chol_meds:
 
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
+st.markdown("""
+**Note:** A "serving" is a standard portion size, such as:
+- 1 medium piece of fruit (apple, banana, etc.)
+- 1/2 cup cooked vegetables or 1 cup raw leafy greens
+- 1/2 cup fruit juice or vegetable juice
+""")
+
 diet_score = 0
 diet_score += st.slider("How many servings of vegetables per week?", 0, 70, 21)
 diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
@@ -104,6 +111,7 @@ cooked_meals = st.slider("How many meals do you cook at home per week?", 0, 21, 
 healthy_cooking = st.radio("Are your home-cooked meals mostly healthy?", ["Yes", "No"])
 if healthy_cooking == "Yes":
     diet_score += cooked_meals * 0.5
+
 # ------------------ SIMULATION ------------------ #
 if st.button("⏱️ Run Simulation"):
     st.success("Simulation started!")
@@ -135,8 +143,8 @@ if st.button("⏱️ Run Simulation"):
     base_glucose += sum(5 * (dose / 1000) for dose in bp_doses.values())
     base_glucose += sum(7 * (dose / 1000) for dose in chol_doses.values())
 
-    # Adjust for lifestyle
-    diet_factor = max(0.5, 1 - 0.01 * diet_score)
+    # Flip diet logic: better diet increases insulin sensitivity
+    diet_factor = min(1.5, 1 + 0.01 * diet_score)
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
     # Final glucose estimation
