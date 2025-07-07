@@ -4,13 +4,13 @@ from random import uniform
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
+    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
 
 # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Simulator")
+st.title("📈 Diabetes Digital Twin Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
 Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
@@ -83,7 +83,7 @@ chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
 st.subheader("🍽️ Diet Quality Questionnaire")
 diet_score = 0
 diet_score += st.slider("How many servings of vegetables per day?", 0, 10, 3)
-diet_score += st.slider("How many servings of fruits per day?", 0, 10, 2)
+diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
 diet_score -= st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
 diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
 diet_score += st.slider("How often do you cook meals at home per week?", 0, 21, 5)
