@@ -25,6 +25,7 @@ Always consult your healthcare provider before making medical decisions based on
 
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
+med_dose = st.slider("Medication Dose (mg/day)", 0, 2000, 500)
 weight = st.slider("Weight (kg)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
@@ -49,7 +50,12 @@ medication_types = {
 prediabetic_meds = {
     "Metformin": 0.40,
     "Lifestyle Coaching": 0.30,
-    "Weight Loss Agents": 0.20
+    "Weight Loss Agents": 0.20,
+    "GLP-1 Receptor Agonists": 0.45,
+    "Alpha-glucosidase Inhibitors": 0.25,
+    "Thiazolidinediones (TZDs)": 0.35,
+    "Acarbose": 0.30,
+    "Intermittent Fasting Protocols": 0.25
 }
 
 # Show medication options depending on status
@@ -60,9 +66,18 @@ elif diagnosis == "Pre-diabetic":
 else:
     selected_meds = []
 
-# Other medications
-bp_med = st.selectbox("Are you on blood pressure medication?", ["None", "Beta Blockers", "ACE Inhibitors", "Diuretics"])
-chol_med = st.selectbox("Are you on cholesterol medication?", ["None", "Statins", "Fibrates", "Niacin"])
+# Expanded medication classes for BP and cholesterol
+bp_options = [
+    "None", "Beta Blockers", "ACE Inhibitors", "Angiotensin II Receptor Blockers (ARBs)", "Calcium Channel Blockers",
+    "Diuretics", "Alpha Blockers", "Vasodilators", "Central Agonists"
+]
+chol_options = [
+    "None", "Statins", "Fibrates", "Niacin", "Bile Acid Sequestrants", "Cholesterol Absorption Inhibitors",
+    "PCSK9 Inhibitors", "Omega-3 Fatty Acids"
+]
+
+bp_med = st.selectbox("Are you on blood pressure medication?", bp_options)
+chol_med = st.selectbox("Are you on cholesterol medication?", chol_options)
 
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
@@ -86,11 +101,22 @@ if st.button("⏱️ Run Simulation"):
     for med in selected_meds:
         if diagnosis == "Diabetic":
             med_effect += medication_types.get(med, 0)
-        else:
+        elif diagnosis == "Pre-diabetic":
             med_effect += prediabetic_meds.get(med, 0)
+        else:
+            med_effect += 0  # Non-diabetic meds not expected to affect glucose significantly
 
-    # Adjust for multiple medications (diminishing returns)
-    med_effect = med_effect * 0.8 if len(selected_meds) > 1 else med_effect
+    # Scale med effect to dose and condition
+    if diagnosis == "Pre-diabetic":
+        med_effect *= 0.7  # generally less sensitive to meds
+    elif diagnosis == "Non-diabetic":
+        med_effect *= 0.3  # very low effect expected
+
+    med_effect *= med_dose / 1000
+
+    # Diminishing returns for multiple meds
+    if len(selected_meds) > 1:
+        med_effect *= 0.8
 
     # Blood pressure & cholesterol meds (small raise in glucose)
     if bp_med != "None":
@@ -99,10 +125,11 @@ if st.button("⏱️ Run Simulation"):
         base_glucose += 7
 
     # Adjust for lifestyle
-    diet_factor = max(0.5, 1 - 0.01 * diet_score)  # worse diet = lower sensitivity
+    diet_factor = max(0.5, 1 - 0.01 * diet_score)
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
     # Final glucose estimation
+    med_effect *= med_dose / 1000
     avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
     avg_glucose /= adjusted_sensitivity
 
@@ -129,4 +156,5 @@ if st.button("⏱️ Run Simulation"):
     ax.set_title("Simulated Blood Glucose Over 7 Days")
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
+
 
