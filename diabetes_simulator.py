@@ -2,7 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 
-# ------------------ PAGE CONFIG ------------------ #
+# ------------------ PAGE ------------------ #
 st.set_page_config(
     page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
     page_icon="📈",
@@ -25,7 +25,6 @@ Always consult your healthcare provider before making medical decisions based on
 
 # ------------------ USER INFO ------------------ #
 age = st.slider("Patient Age (years)", 10, 100, 45)
-med_dose = st.slider("Medication Dose (mg/day)", 0, 2000, 500)
 weight = st.slider("Weight (lbs)", 30, 200, 70)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
@@ -66,6 +65,11 @@ elif diagnosis == "Pre-diabetic":
 else:
     selected_meds = []
 
+# Create sliders for dose input for each selected medication
+med_doses = {}
+for med in selected_meds:
+    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
+
 # Expanded medication classes for BP and cholesterol
 bp_options = [
     "None", "Beta Blockers", "ACE Inhibitors", "Angiotensin II Receptor Blockers (ARBs)", "Calcium Channel Blockers",
@@ -79,8 +83,8 @@ chol_options = [
 bp_meds = st.multiselect("Select Blood Pressure Medications:", bp_options)
 chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
 
-# ------------------ DIET SURVEY ------------------ #
-st.subheader("🍽️ Diet Quality Survey")
+# ------------------ DIET QUESTIONNAIRE ------------------ #
+st.subheader("🍽️ Diet Quality Questionnaire")
 
 veg_servings = st.slider("How many servings of vegetables per week?", 0, 70, 21)
 fruit_servings = st.slider("How many servings of fruits per week?", 0, 70, 14)
@@ -104,23 +108,21 @@ if st.button("⏱️ Run Simulation"):
     # Base glucose estimate
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # Adjustments
+    # Calculate total medication effect scaled by individual doses
     med_effect = 0
     for med in selected_meds:
+        base_effect = 0
         if diagnosis == "Diabetic":
-            med_effect += medication_types.get(med, 0)
+            base_effect = medication_types.get(med, 0)
         elif diagnosis == "Pre-diabetic":
-            med_effect += prediabetic_meds.get(med, 0)
-        else:
-            med_effect += 0  # Non-diabetic meds not expected to affect glucose significantly
+            base_effect = prediabetic_meds.get(med, 0)
+        med_effect += base_effect * (med_doses.get(med, 0) / 1000)
 
-    # Scale med effect to dose and condition
+    # Scale med effect by diagnosis sensitivity
     if diagnosis == "Pre-diabetic":
         med_effect *= 0.7  # generally less sensitive to meds
     elif diagnosis == "Non-diabetic":
         med_effect *= 0.3  # very low effect expected
-
-    med_effect *= med_dose / 1000
 
     # Diminishing returns for multiple meds
     if len(selected_meds) > 1:
@@ -135,7 +137,6 @@ if st.button("⏱️ Run Simulation"):
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
     # Final glucose estimation
-    med_effect *= med_dose / 1000
     avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
     avg_glucose /= adjusted_sensitivity
 
