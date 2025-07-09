@@ -35,27 +35,27 @@ diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", 
 
 # ------------------ MEDICATION OPTIONS ------------------ #
 medication_types = {
-    "Insulin": 1.00,
-    "Sulfonylureas": 0.70,
-    "Metformin": 0.50,
-    "GLP-1 Receptor Agonists": 0.60,
-    "SGLT2 Inhibitors": 0.40,
-    "Thiazolidinediones (TZDs)": 0.45,
-    "DPP-4 Inhibitors": 0.30,
-    "Meglitinides": 0.55,
-    "Alpha-glucosidase Inhibitors": 0.35,
-    "Amylin Analogs": 0.25
+    "Insulin": (1.00, 200),
+    "Sulfonylureas": (0.70, 20),
+    "Metformin": (0.50, 2000),
+    "GLP-1 Receptor Agonists": (0.60, 5),
+    "SGLT2 Inhibitors": (0.40, 25),
+    "Thiazolidinediones (TZDs)": (0.45, 45),
+    "DPP-4 Inhibitors": (0.30, 100),
+    "Meglitinides": (0.55, 16),
+    "Alpha-glucosidase Inhibitors": (0.35, 100),
+    "Amylin Analogs": (0.25, 120)
 }
 
 prediabetic_meds = {
-    "Metformin": 0.40,
-    "Lifestyle Coaching": 0.30,
-    "Weight Loss Agents": 0.20,
-    "GLP-1 Receptor Agonists": 0.45,
-    "Alpha-glucosidase Inhibitors": 0.25,
-    "Thiazolidinediones (TZDs)": 0.35,
-    "Acarbose": 0.30,
-    "Intermittent Fasting Protocols": 0.25
+    "Metformin": (0.40, 2000),
+    "Lifestyle Coaching": (0.30, 1),
+    "Weight Loss Agents": (0.20, 200),
+    "GLP-1 Receptor Agonists": (0.45, 5),
+    "Alpha-glucosidase Inhibitors": (0.25, 100),
+    "Thiazolidinediones (TZDs)": (0.35, 45),
+    "Acarbose": (0.30, 100),
+    "Intermittent Fasting Protocols": (0.25, 1)
 }
 
 if diagnosis == "Diabetic":
@@ -67,109 +67,39 @@ else:
 
 med_doses = {}
 for med in selected_meds:
-    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, 2000, 500)
+    max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
+    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
 
 # ------------------ OTHER MEDICATIONS ------------------ #
-bp_options = [
-    "None", "Beta Blockers", "ACE Inhibitors", "Angiotensin II Receptor Blockers (ARBs)", "Calcium Channel Blockers",
-    "Diuretics", "Alpha Blockers", "Vasodilators", "Central Agonists"
-]
-chol_options = [
-    "None", "Statins", "Fibrates", "Niacin", "Bile Acid Sequestrants", "Cholesterol Absorption Inhibitors",
-    "PCSK9 Inhibitors", "Omega-3 Fatty Acids"
-]
+bp_options = {
+    "Beta Blockers": 200,
+    "ACE Inhibitors": 40,
+    "Angiotensin II Receptor Blockers (ARBs)": 320,
+    "Calcium Channel Blockers": 240,
+    "Diuretics": 100,
+    "Alpha Blockers": 20,
+    "Vasodilators": 40,
+    "Central Agonists": 0  # placeholder
+}
+chol_options = {
+    "Statins": 80,
+    "Fibrates": 200,
+    "Niacin": 2000,
+    "Bile Acid Sequestrants": 15000,
+    "Cholesterol Absorption Inhibitors": 10,
+    "PCSK9 Inhibitors": 420,
+    "Omega-3 Fatty Acids": 4000
+}
 
-bp_meds = st.multiselect("Select Blood Pressure Medications:", bp_options)
-chol_meds = st.multiselect("Select Cholesterol Medications:", chol_options)
+bp_meds = st.multiselect("Select Blood Pressure Medications:", ["None"] + list(bp_options.keys()))
+chol_meds = st.multiselect("Select Cholesterol Medications:", ["None"] + list(chol_options.keys()))
 
 bp_doses = {}
 for med in bp_meds:
     if med != "None":
-        bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, 2000, 500)
+        bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, bp_options[med], min(bp_options[med], 50))
 
 chol_doses = {}
 for med in chol_meds:
     if med != "None":
-        chol_doses[med] = st.slider(f"Dose for Cholesterol Med: {med} (mg/day)", 0, 2000, 500)
-
-# ------------------ DIET QUESTIONNAIRE ------------------ #
-st.subheader("🍽️ Diet Quality Questionnaire")
-st.markdown("""
-**Note:** A "serving" is a standard portion size, such as:
-- 1 medium piece of fruit (apple, banana, etc.)
-- 1/2 cup cooked vegetables or 1 cup raw leafy greens
-- 1/2 cup fruit juice or vegetable juice
-""")
-
-diet_score = 0
-diet_score += st.slider("How many servings of vegetables per week?", 0, 70, 21)
-diet_score += st.slider("How many servings of fruits per week?", 0, 70, 14)
-diet_score -= st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
-diet_score -= st.slider("How many fast food meals per week?", 0, 14, 3)
-
-cooked_meals = st.slider("How many meals do you cook at home per week?", 0, 21, 5)
-healthy_cooking = st.radio("Are your home-cooked meals mostly healthy?", ["Yes", "No"])
-if healthy_cooking == "Yes":
-    diet_score += cooked_meals * 0.5
-
-# ------------------ SIMULATION ------------------ #
-if st.button("⏱️ Run Simulation"):
-    st.success("Simulation started!")
-
-    # Base glucose estimate
-    base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
-
-    # Smarter medication model: sigmoid-like diminishing effect
-    med_effect = 0
-    for med in selected_meds:
-        dose = med_doses.get(med, 0)
-        base = medication_types.get(med, 0) if diagnosis == "Diabetic" else prediabetic_meds.get(med, 0)
-        scaled_effect = base * (1 - math.exp(-dose / 500))  # sigmoid-style curve
-        med_effect += scaled_effect
-
-    if diagnosis == "Pre-diabetic":
-        med_effect *= 0.7
-    elif diagnosis == "Non-diabetic":
-        med_effect *= 0.3
-
-    if len(selected_meds) > 1:
-        med_effect *= 0.8
-
-    # BP/cholesterol raise
-    base_glucose += sum(5 * (dose / 1000) for dose in bp_doses.values())
-    base_glucose += sum(7 * (dose / 1000) for dose in chol_doses.values())
-
-    # Diet-adjusted insulin sensitivity
-    diet_factor = min(1.5, 1 + 0.01 * diet_score)
-    adjusted_sensitivity = insulin_sensitivity * diet_factor
-
-    # Final estimates
-    avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
-    avg_glucose /= adjusted_sensitivity
-
-    fasting_glucose = avg_glucose - 10
-    post_meal_glucose = avg_glucose + 30
-
-    glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
-    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-    estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
-    if estimated_hba1c < 5.7:
-        diagnosis_label = "Normal"
-    elif estimated_hba1c < 6.5:
-        diagnosis_label = "Pre-diabetic"
-    else:
-        diagnosis_label = "Diabetic"
-
-    # ------------------ RESULTS ------------------ #
-    st.subheader("📊 Simulation Results")
-    st.metric("Fasting Glucose (mg/dL)", f"{round(fasting_glucose,1)}")
-    st.metric("2-Hour Post-Meal Glucose (mg/dL)", f"{round(post_meal_glucose,1)}")
-    st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
-    st.metric("Estimated HbA1c (%)", f"{estimated_hba1c}", diagnosis_label)
-
-    fig, ax = plt.subplots()
-    ax.plot(days, glucose_levels, marker='o', color='blue')
-    ax.set_title("Simulated Blood Glucose Over 7 Days")
-    ax.set_ylabel("Glucose (mg/dL)")
-    st.pyplot(fig)
+        chol_doses[med] = st.slider(f"Dose for Cholesterol Med: {med} (mg/day)", 0, chol_options[med], min(chol_options[med], 50))
