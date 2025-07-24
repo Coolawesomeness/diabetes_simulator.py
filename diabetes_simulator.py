@@ -34,6 +34,7 @@ insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.
 diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
 
 # ------------------ MEDICATION OPTIONS ------------------ #
+# Diabetic Medications: effectiveness decimal, max dose mg/day
 medication_types = {
     "Insulin": (1.00, 200),
     "Sulfonylureas": (0.70, 20),
@@ -47,6 +48,7 @@ medication_types = {
     "Amylin Analogs": (0.25, 120)
 }
 
+# Pre-Diabetic Medications: effectiveness decimal, max dose mg/day
 prediabetic_meds = {
     "Metformin": (0.40, 2000),
     "Lifestyle Coaching": (0.30, 1),
@@ -58,20 +60,7 @@ prediabetic_meds = {
     "Intermittent Fasting Protocols": (0.25, 1)
 }
 
-if diagnosis == "Diabetic":
-    selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
-elif diagnosis == "Pre-diabetic":
-    selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
-else:
-    selected_meds = []
-
-med_doses = {}
-meds_with_dose = list(medication_types.keys()) + list(prediabetic_meds.keys())
-for med in selected_meds:
-    max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
-    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
-
-# ------------------ OTHER MEDICATIONS ------------------ #
+# Blood Pressure Medications: max dose mg/day
 bp_options = {
     "Beta Blockers": 200,
     "ACE Inhibitors": 40,
@@ -80,8 +69,10 @@ bp_options = {
     "Diuretics": 100,
     "Alpha Blockers": 20,
     "Vasodilators": 40,
-    "Central Agonists": 0
+    "Central Agonists": 100
 }
+
+# Cholesterol Medications: max dose mg/day
 chol_options = {
     "Statins": 80,
     "Fibrates": 200,
@@ -92,19 +83,81 @@ chol_options = {
     "Omega-3 Fatty Acids": 4000
 }
 
+# Steroid Medications: estimated effect on glucose (+) and max dose mg/day
+steroid_options = {
+    "Prednisone": (0.20, 60),
+    "Hydrocortisone": (0.15, 100),
+    "Dexamethasone": (0.25, 20),
+    "Methylprednisolone": (0.18, 80)
+}
+
+# Antidepressant Medications: estimated effect on glucose (+) and max dose mg/day
+antidepressant_options = {
+    "SSRIs": (0.10, 100),
+    "SNRIs": (0.12, 200),
+    "Tricyclics": (0.15, 150),
+    "MAO Inhibitors": (0.10, 60)
+}
+
+# Antipsychotic Medications: estimated effect on glucose (+) and max dose mg/day
+antipsychotic_options = {
+    "Olanzapine": (0.25, 20),
+    "Risperidone": (0.18, 8),
+    "Quetiapine": (0.20, 800),
+    "Aripiprazole": (0.12, 30)
+}
+
+# ------------------ MEDICATION SELECTION ------------------ #
+if diagnosis == "Diabetic":
+    selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
+elif diagnosis == "Pre-diabetic":
+    selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
+else:
+    selected_meds = []
+
+# Doses for diabetic/pre-diabetic meds
+med_doses = {}
+meds_with_dose = list(medication_types.keys()) + list(prediabetic_meds.keys())
+for med in selected_meds:
+    max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
+    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
+
+# ------------------ OTHER MEDICATIONS SELECTION ------------------ #
 bp_meds = st.multiselect("Select Blood Pressure Medications:", ["None"] + list(bp_options.keys()))
 chol_meds = st.multiselect("Select Cholesterol Medications:", ["None"] + list(chol_options.keys()))
+steroid_meds = st.multiselect("Select Steroid Medications:", ["None"] + list(steroid_options.keys()))
+antidepressant_meds = st.multiselect("Select Antidepressant Medications:", ["None"] + list(antidepressant_options.keys()))
+antipsychotic_meds = st.multiselect("Select Antipsychotic Medications:", ["None"] + list(antipsychotic_options.keys()))
 
+# Doses for blood pressure meds
 bp_doses = {}
 for med in bp_meds:
     if med != "None":
         bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, bp_options[med], min(bp_options[med], 50))
 
+# Doses for cholesterol meds
 chol_doses = {}
 for med in chol_meds:
     if med != "None":
         chol_doses[med] = st.slider(f"Dose for Cholesterol Med: {med} (mg/day)", 0, chol_options[med], min(chol_options[med], 50))
 
+# Doses for steroid meds
+steroid_doses = {}
+for med in steroid_meds:
+    if med != "None":
+        steroid_doses[med] = st.slider(f"Dose for Steroid Med: {med} (mg/day)", 0, steroid_options[med][1], min(steroid_options[med][1], 20))
+
+# Doses for antidepressant meds
+antidepressant_doses = {}
+for med in antidepressant_meds:
+    if med != "None":
+        antidepressant_doses[med] = st.slider(f"Dose for Antidepressant Med: {med} (mg/day)", 0, antidepressant_options[med][1], min(antidepressant_options[med][1], 50))
+
+# Doses for antipsychotic meds
+antipsychotic_doses = {}
+for med in antipsychotic_meds:
+    if med != "None":
+        antipsychotic_doses[med] = st.slider(f"Dose for Antipsychotic Med: {med} (mg/day)", 0, antipsychotic_options[med][1], min(antipsychotic_options[med][1], 50))
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
 
