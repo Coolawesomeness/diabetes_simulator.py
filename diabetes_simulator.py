@@ -180,36 +180,63 @@ diet_score = max(0, diet_score)
 if st.button("⏱️ Run Simulation"):
     st.success("Simulation started!")
 
+    # STEP 1: Determine base glucose based on diagnosis
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
+    # STEP 2: Medication effects
     med_effect = 0
-    for med in selected_meds:
-        base_effect = medication_types.get(med, (0, 0))[0] if diagnosis == "Diabetic" else prediabetic_meds.get(med, (0, 0))[0]
-        if med in meds_with_dose:
-            med_effect += base_effect * (med_doses.get(med, 0) / 1000)
-        else:
-            med_effect += base_effect
+    all_meds = {
+        **{med: medication_types.get(med, (0, 0))[0] for med in selected_meds},
+        **{med: bp_medications.get(med, 0) for med in bp_meds if med != "None"},
+        **{med: chol_medications.get(med, 0) for med in chol_meds if med != "None"},
+        **{med: steroid_medications.get(med, 0) for med in steroid_meds if med != "None"},
+        **{med: antidepressant_medications.get(med, 0) for med in antidepressant_meds if med != "None"},
+        **{med: antipsychotic_medications.get(med, 0) for med in antipsychotic_meds if med != "None"},
+    }
 
+    for med, effect in all_meds.items():
+        if med in med_doses:
+            med_effect += effect * (med_doses.get(med, 0) / 1000)
+        else:
+            med_effect += effect
+
+    # Adjust effect based on diagnosis
     if diagnosis == "Pre-diabetic":
         med_effect *= 0.7
     elif diagnosis == "Non-diabetic":
         med_effect *= 0.3
 
-    if len(selected_meds) > 1:
-        med_effect *= 0.8
+    # If many meds, reduce effectiveness due to interaction
+    if len(all_meds) > 2:
+        med_effect *= 0.85
 
-    base_glucose += 5 * len([med for med in bp_meds if med != "None"])
-    base_glucose += 7 * len([med for med in chol_meds if med != "None"])
-
-    diet_factor = max(0.5, 1 - 0.01 * diet_score)
+    # STEP 3: Adjustments based on lifestyle & conditions
+    diet_factor = max(0.4, 1 - 0.015 * diet_score)  # Higher diet_score = lower impact
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
-    avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
-    avg_glucose /= adjusted_sensitivity
+    # Sleep effect
+    if sleep_hours < 6:
+        base_glucose += 15
+    elif sleep_hours > 9:
+        base_glucose -= 5
 
-    glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
+    # Menstrual cycle
+    if is_menstruating:
+        base_glucose += 10
+
+    # Pregnancy effect
+    if is_pregnant:
+        base_glucose += 25
+
+    # STEP 4: Final glucose computation
+    avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
+    avg_glucose /= max(adjusted_sensitivity, 1)
+
+    # Simulate daily variation
+    glucose_levels = [avg_glucose + uniform(-12, 12) for _ in range(7)]
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
+    # Derived values
     estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
     fasting_glucose = round(avg_glucose - 10, 1)
     post_meal_glucose = round(avg_glucose + 25, 1)
@@ -221,6 +248,7 @@ if st.button("⏱️ Run Simulation"):
     else:
         diagnosis_label = "Diabetic"
 
+    # STEP 5: Output Results
     st.subheader("📊 Simulation Results")
     st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
     st.metric("Fasting Glucose (mg/dL)", f"{fasting_glucose}")
