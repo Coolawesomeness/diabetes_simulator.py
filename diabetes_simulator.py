@@ -28,7 +28,6 @@ Always consult your healthcare provider before making medical decisions based on
 age = st.slider("Patient Age (years)", 10, 100, 45)
 weight = st.slider("Weight (lbs)", 60, 300, 117)
 exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
-insulin_sensitivity = st.slider("Insulin Sensitivity (1 = normal)", 0.5, 2.0, 1.0)
 
 # ------------------ DIAGNOSIS ------------------ #
 diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
@@ -165,7 +164,36 @@ chol_medications = {med: 0.05 for med in chol_options}
 steroid_medications = {k: v[0] for k, v in steroid_options.items()}
 antidepressant_medications = {k: v[0] for k, v in antidepressant_options.items()}
 antipsychotic_medications = {k: v[0] for k, v in antipsychotic_options.items()}
+# --- Insulin Sensitivity Factor Calculator ---
+st.subheader("💉 Insulin Sensitivity Calculator (Outpatient Use Only)")
+st.markdown("""
+The Insulin Sensitivity Factor (ISF) tells you how much 1 unit of insulin will lower your blood glucose.
 
+- **Rapid-acting insulin (e.g., Humalog, Novolog)**: use the **1800 Rule** → ISF = 1800 ÷ Total Daily Dose (TDD)
+- **Short-acting (Regular insulin)**: use the **1500 Rule** → ISF = 1500 ÷ TDD
+""")
+
+insulin_type = st.selectbox("Select Insulin Type", ["Rapid-acting", "Short-acting (Regular)", "Intermediate-acting", "Long-acting"])
+tdd = st.number_input("Enter Total Daily Insulin Dose (TDD) in units", min_value=1.0, step=1.0)
+
+if insulin_type == "Rapid-acting":
+    isf = round(1800 / tdd, 1)
+    st.markdown("💡 Rapid-acting insulin works quickly (within 15 mins), peaks in 1-2 hrs, lasts 3-5 hrs.")
+elif insulin_type == "Short-acting (Regular)":
+    isf = round(1500 / tdd, 1)
+    st.markdown("💡 Regular insulin begins working in 30 minutes, peaks in 2-3 hrs, and lasts 5-8 hrs.")
+else:
+    isf = None
+    st.markdown("⚠️ ISF is typically used with rapid or short-acting insulin only.")
+
+if isf:
+    st.success(f"Estimated ISF: 1 unit lowers glucose by ~{isf} mg/dL")
+    current_bg = st.number_input("Enter Current Blood Glucose (mg/dL)", min_value=0.0, step=1.0)
+    target_bg = st.number_input("Enter Target Blood Glucose (mg/dL)", min_value=0.0, value=110.0, step=1.0)
+    if current_bg > target_bg:
+        correction_dose = round((current_bg - target_bg) / isf, 1)
+        st.info(f"Suggested Correction Dose: {correction_dose} units of {insulin_type} insulin")
+        st.markdown("✅ Safe correction is usually 1–3 units unless otherwise instructed by a healthcare provider.")
 # ------------------ SLEEP AND HORMONAL SURVEY ------------------#
 st.subheader("🛌 Sleep and Hormonal Factors")
 
@@ -194,63 +222,66 @@ diet_score = max(0, diet_score)
 if st.button("⏱️ Run Simulation"):
     st.success("Simulation started!")
 
+    # Base glucose depending on diagnosis
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # Medication effect from selected meds
+    # Medication effect
     med_effect = 0
     for med in selected_meds:
-        base_effect = medication_types.get(med, (0, 0))[0] if diagnosis == "Diabetic" else prediabetic_meds.get(med, (0, 0))[0]
+        base_effect = (
+            medication_types.get(med, (0, 0))[0]
+            if diagnosis == "Diabetic"
+            else prediabetic_meds.get(med, (0, 0))[0]
+        )
         if med in meds_with_dose:
             med_effect += base_effect * (med_doses.get(med, 0) / 1000)
         else:
             med_effect += base_effect
 
-    # Adjust for condition
     if diagnosis == "Pre-diabetic":
         med_effect *= 0.7
     elif diagnosis == "Non-diabetic":
         med_effect *= 0.3
 
     if len(selected_meds) > 1:
-        med_effect *= 0.8
+        med_effect *= 0.8  # Diminishing return on med stacking
 
-    # Add glucose from other medications
-    med_effect += sum([
-        bp_medications.get(med, 0) * (bp_doses.get(med, 0) / 100) for med in bp_meds if med != "None"
-    ])
-    med_effect += sum([
-        chol_medications.get(med, 0) * (chol_doses.get(med, 0) / 100) for med in chol_meds if med != "None"
-    ])
-    med_effect += sum([
-        steroid_medications.get(med, 0) * (steroid_doses.get(med, 0) / 100) for med in steroid_meds if med != "None"
-    ])
-    med_effect += sum([
-        antidepressant_medications.get(med, 0) * (antidepressant_doses.get(med, 0) / 100) for med in antidepressant_meds if med != "None"
-    ])
-    med_effect += sum([
-        antipsychotic_medications.get(med, 0) * (antipsychotic_doses.get(med, 0) / 100) for med in antipsychotic_meds if med != "None"
-    ])
+    # BP and cholesterol med effects
+    base_glucose += 5 * len([med for med in bp_meds if med != "None"])
+    base_glucose += 7 * len([med for med in chol_meds if med != "None"])
 
-    # Lifestyle and physiological modifiers
+    # Antidepressant, antipsychotic, and steroid effects
+    base_glucose += 12 * len([med for med in steroid_meds if med != "None"])
+    base_glucose += 10 * len([med for med in antidepressant_meds if med != "None"])
+    base_glucose += 15 * len([med for med in antipsychotic_meds if med != "None"])
+
+    # Diet and exercise adjustments
     diet_factor = max(0.5, 1 - 0.01 * diet_score)
-    adjusted_sensitivity = insulin_sensitivity * diet_factor
+    adjusted_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
+    adjusted_glucose *= diet_factor
 
-    avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
+    # --- INSULIN EFFECT ---
+    insulin_effect = 0
+    correction_dose = 0
+    if insulin_type in ["Rapid-acting", "Short-acting"] and total_daily_dose > 0:
+        isf = (1800 if insulin_type == "Rapid-acting" else 1500) / total_daily_dose
 
-    # Add impact of sleep, menstruation, pregnancy
-    if sleep_hours < 6:
-        avg_glucose += 5
-    if is_menstruating:
-        avg_glucose += 7
-    if is_pregnant:
-        avg_glucose += 10
+        if current_glucose and target_glucose:
+            try:
+                correction_dose = max((current_glucose - target_glucose) / isf, 0)
+                insulin_effect = correction_dose * isf
+                adjusted_glucose -= insulin_effect
+            except ZeroDivisionError:
+                pass
+    # ----------------------
 
-    avg_glucose /= adjusted_sensitivity
+    avg_glucose = adjusted_glucose
 
-    # Simulate 7-day glucose
+    # Simulated glucose levels over a week
     glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
+    # Metrics
     estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
     fasting_glucose = round(avg_glucose - 10, 1)
     post_meal_glucose = round(avg_glucose + 25, 1)
@@ -264,13 +295,13 @@ if st.button("⏱️ Run Simulation"):
 
     # Display results
     st.subheader("📊 Simulation Results")
-    st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
+    st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7, 1)}")
     st.metric("Fasting Glucose (mg/dL)", f"{fasting_glucose}")
     st.metric("2-hour Post-Meal Glucose (mg/dL)", f"{post_meal_glucose}")
     st.metric("Estimated HbA1c (%)", f"{estimated_hba1c}", diagnosis_label)
 
     fig, ax = plt.subplots()
-    ax.plot(days, glucose_levels, marker='o', color='blue')
+    ax.plot(days, glucose_levels, marker="o", color="blue")
     ax.set_title("Simulated Blood Glucose Over 7 Days")
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
