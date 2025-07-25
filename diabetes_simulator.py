@@ -5,7 +5,7 @@ import math
 
 # ------------------ PAGE CONFIG ------------------ #
 st.set_page_config(
-    page_title="Diabetes Digital Twin by Siddharth Tirumalai",
+    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
     page_icon="📈",
     layout="centered"
 )
@@ -158,6 +158,20 @@ antipsychotic_doses = {}
 for med in antipsychotic_meds:
     if med != "None":
         antipsychotic_doses[med] = st.slider(f"Dose for Antipsychotic Med: {med} (mg/day)", 0, antipsychotic_options[med][1], min(antipsychotic_options[med][1], 50))
+
+# Define glucose impact values for additional medications
+bp_medications = {med: 0.10 for med in bp_options}
+chol_medications = {med: 0.05 for med in chol_options}
+steroid_medications = {k: v[0] for k, v in steroid_options.items()}
+antidepressant_medications = {k: v[0] for k, v in antidepressant_options.items()}
+antipsychotic_medications = {k: v[0] for k, v in antipsychotic_options.items()}
+
+# ------------------ SLEEP AND HORMONAL SURVEY ------------------#
+st.subheader("🛌 Sleep and Hormonal Factors")
+
+sleep_hours = st.slider("Average Sleep Duration (hours/night)", 3, 12, 7)
+is_menstruating = st.checkbox("Is the patient currently menstruating?", value=False)
+is_pregnant = st.checkbox("Is the patient currently pregnant?", value=False)
 # ------------------ DIET QUESTIONNAIRE ------------------ #
 st.subheader("🍽️ Diet Quality Questionnaire")
 
@@ -180,63 +194,63 @@ diet_score = max(0, diet_score)
 if st.button("⏱️ Run Simulation"):
     st.success("Simulation started!")
 
-    # STEP 1: Determine base glucose based on diagnosis
     base_glucose = 110 if diagnosis == "Non-diabetic" else (125 if diagnosis == "Pre-diabetic" else 160)
 
-    # STEP 2: Medication effects
+    # Medication effect from selected meds
     med_effect = 0
-    all_meds = {
-        **{med: medication_types.get(med, (0, 0))[0] for med in selected_meds},
-        **{med: bp_medications.get(med, 0) for med in bp_meds if med != "None"},
-        **{med: chol_medications.get(med, 0) for med in chol_meds if med != "None"},
-        **{med: steroid_medications.get(med, 0) for med in steroid_meds if med != "None"},
-        **{med: antidepressant_medications.get(med, 0) for med in antidepressant_meds if med != "None"},
-        **{med: antipsychotic_medications.get(med, 0) for med in antipsychotic_meds if med != "None"},
-    }
-
-    for med, effect in all_meds.items():
-        if med in med_doses:
-            med_effect += effect * (med_doses.get(med, 0) / 1000)
+    for med in selected_meds:
+        base_effect = medication_types.get(med, (0, 0))[0] if diagnosis == "Diabetic" else prediabetic_meds.get(med, (0, 0))[0]
+        if med in meds_with_dose:
+            med_effect += base_effect * (med_doses.get(med, 0) / 1000)
         else:
-            med_effect += effect
+            med_effect += base_effect
 
-    # Adjust effect based on diagnosis
+    # Adjust for condition
     if diagnosis == "Pre-diabetic":
         med_effect *= 0.7
     elif diagnosis == "Non-diabetic":
         med_effect *= 0.3
 
-    # If many meds, reduce effectiveness due to interaction
-    if len(all_meds) > 2:
-        med_effect *= 0.85
+    if len(selected_meds) > 1:
+        med_effect *= 0.8
 
-    # STEP 3: Adjustments based on lifestyle & conditions
-    diet_factor = max(0.4, 1 - 0.015 * diet_score)  # Higher diet_score = lower impact
+    # Add glucose from other medications
+    med_effect += sum([
+        bp_medications.get(med, 0) * (bp_doses.get(med, 0) / 100) for med in bp_meds if med != "None"
+    ])
+    med_effect += sum([
+        chol_medications.get(med, 0) * (chol_doses.get(med, 0) / 100) for med in chol_meds if med != "None"
+    ])
+    med_effect += sum([
+        steroid_medications.get(med, 0) * (steroid_doses.get(med, 0) / 100) for med in steroid_meds if med != "None"
+    ])
+    med_effect += sum([
+        antidepressant_medications.get(med, 0) * (antidepressant_doses.get(med, 0) / 100) for med in antidepressant_meds if med != "None"
+    ])
+    med_effect += sum([
+        antipsychotic_medications.get(med, 0) * (antipsychotic_doses.get(med, 0) / 100) for med in antipsychotic_meds if med != "None"
+    ])
+
+    # Lifestyle and physiological modifiers
+    diet_factor = max(0.5, 1 - 0.01 * diet_score)
     adjusted_sensitivity = insulin_sensitivity * diet_factor
 
-    # Sleep effect
-    if sleep_hours < 6:
-        base_glucose += 15
-    elif sleep_hours > 9:
-        base_glucose -= 5
-
-    # Menstrual cycle
-    if is_menstruating:
-        base_glucose += 10
-
-    # Pregnancy effect
-    if is_pregnant:
-        base_glucose += 25
-
-    # STEP 4: Final glucose computation
     avg_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
-    avg_glucose /= max(adjusted_sensitivity, 1)
 
-    # Simulate daily variation
-    glucose_levels = [avg_glucose + uniform(-12, 12) for _ in range(7)]
+    # Add impact of sleep, menstruation, pregnancy
+    if sleep_hours < 6:
+        avg_glucose += 5
+    if is_menstruating:
+        avg_glucose += 7
+    if is_pregnant:
+        avg_glucose += 10
+
+    avg_glucose /= adjusted_sensitivity
+
+    # Simulate 7-day glucose
+    glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-    # Derived values
     estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
     fasting_glucose = round(avg_glucose - 10, 1)
     post_meal_glucose = round(avg_glucose + 25, 1)
@@ -248,7 +262,7 @@ if st.button("⏱️ Run Simulation"):
     else:
         diagnosis_label = "Diabetic"
 
-    # STEP 5: Output Results
+    # Display results
     st.subheader("📊 Simulation Results")
     st.metric("Average Glucose (mg/dL)", f"{round(sum(glucose_levels)/7,1)}")
     st.metric("Fasting Glucose (mg/dL)", f"{fasting_glucose}")
