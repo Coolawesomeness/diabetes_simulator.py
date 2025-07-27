@@ -108,10 +108,10 @@ if selected_tab == "🏠 Home":
     # ------------------ MEDICATION SELECTION ------------------ #
     if diagnosis == "Diabetic":
         selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
-    elif diagnosis == "Pre-diabetic":
-    selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
-    else:
-    selected_meds = []
+        elif diagnosis == "Pre-diabetic":
+            selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
+        else:
+            selected_meds = []
 
     # Doses for diabetic/pre-diabetic meds
     med_doses = {}
