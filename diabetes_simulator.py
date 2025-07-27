@@ -10,30 +10,30 @@ selected_tab = st.sidebar.radio("Select a tab", ["🏠 Home", "📈 CGM Simulati
 if selected_tab == "🏠 Home":
     
     # ------------------ TITLE & DISCLAIMER ------------------ #
-st.title("📈 Diabetes Digital Simulator")
-st.markdown("""
-**Created by: Siddharth Tirumalai**  
-Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
-""")
+    st.title("📈 Diabetes Digital Simulator")
+    st.markdown("""
+    **Created by: Siddharth Tirumalai**  
+    Simulate blood glucose and HbA1c changes based on medications, diet, and lifestyle factors.
+    """)
 
-st.warning("""
-This simulation provides estimated trends in glucose and HbA1c based on user input. 
-It assumes you are only taking medications related to blood sugar, blood pressure, or cholesterol.
-If you are on other drugs (e.g., corticosteroids, antidepressants, antipsychotics), results may vary significantly.
-Always consult your healthcare provider before making medical decisions based on this simulation.
-""")
+    st.warning("""
+    This simulation provides estimated trends in glucose and HbA1c based on user input. 
+    It assumes you are only taking medications related to blood sugar, blood pressure, or cholesterol.
+    If you are on other drugs (e.g., corticosteroids, antidepressants, antipsychotics), results may vary significantly.
+    Always consult your healthcare provider before making medical decisions based on this simulation.
+    """)
 
-# ------------------ USER INFO ------------------ #
-age = st.slider("Patient Age (years)", 10, 100, 45)
-weight = st.slider("Weight (lbs)", 60, 300, 117)
-exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
+    # ------------------ USER INFO ------------------ #
+    age = st.slider("Patient Age (years)", 10, 100, 45)
+    weight = st.slider("Weight (lbs)", 60, 300, 117)
+    exercise = st.slider("Daily Exercise (min)", 0, 120, 30)
 
-# ------------------ DIAGNOSIS ------------------ #
-diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
+    # ------------------ DIAGNOSIS ------------------ #
+    diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
 
-# ------------------ MEDICATION OPTIONS ------------------ #
-# Diabetic Medications: effectiveness decimal, max dose mg/day
-medication_types = {
+     # ------------------ MEDICATION OPTIONS ------------------ #
+    # Diabetic Medications: effectiveness decimal, max dose mg/day
+    medication_types = {
     "Insulin": (1.00, 200),
     "Sulfonylureas": (0.70, 20),
     "Metformin": (0.50, 2000),
@@ -44,10 +44,10 @@ medication_types = {
     "Meglitinides": (0.55, 16),
     "Alpha-glucosidase Inhibitors": (0.35, 100),
     "Amylin Analogs": (0.25, 120)
-}
+    }
 
-# Pre-Diabetic Medications: effectiveness decimal, max dose mg/day
-prediabetic_meds = {
+    # Pre-Diabetic Medications: effectiveness decimal, max dose mg/day
+    prediabetic_meds = {
     "Metformin": (0.40, 2000),
     "Lifestyle Coaching": (0.30, 1),
     "Weight Loss Agents": (0.20, 200),
@@ -56,10 +56,10 @@ prediabetic_meds = {
     "Thiazolidinediones (TZDs)": (0.35, 45),
     "Acarbose": (0.30, 100),
     "Intermittent Fasting Protocols": (0.25, 1)
-}
+    }
 
-# Blood Pressure Medications: max dose mg/day
-bp_options = {
+    # Blood Pressure Medications: max dose mg/day
+    bp_options = {
     "Beta Blockers": 200,
     "ACE Inhibitors": 40,
     "Angiotensin II Receptor Blockers (ARBs)": 320,
@@ -68,10 +68,10 @@ bp_options = {
     "Alpha Blockers": 20,
     "Vasodilators": 40,
     "Central Agonists": 100
-}
+    }
 
-# Cholesterol Medications: max dose mg/day
-chol_options = {
+    # Cholesterol Medications: max dose mg/day
+    chol_options = {
     "Statins": 80,
     "Fibrates": 200,
     "Niacin": 2000,
@@ -79,57 +79,57 @@ chol_options = {
     "Cholesterol Absorption Inhibitors": 10,
     "PCSK9 Inhibitors": 420,
     "Omega-3 Fatty Acids": 4000
-}
+    }
 
-# Steroid Medications: estimated effect on glucose (+) and max dose mg/day
-steroid_options = {
+    # Steroid Medications: estimated effect on glucose (+) and max dose mg/day
+    steroid_options = {
     "Prednisone": (0.20, 60),
     "Hydrocortisone": (0.15, 100),
     "Dexamethasone": (0.25, 20),
     "Methylprednisolone": (0.18, 80)
-}
+    }
 
-# Antidepressant Medications: estimated effect on glucose (+) and max dose mg/day
-antidepressant_options = {
+    # Antidepressant Medications: estimated effect on glucose (+) and max dose mg/day
+    antidepressant_options = {
     "SSRIs": (0.10, 100),
     "SNRIs": (0.12, 200),
     "Tricyclics": (0.15, 150),
     "MAO Inhibitors": (0.10, 60)
-}
+    }
 
-# Antipsychotic Medications: estimated effect on glucose (+) and max dose mg/day
-antipsychotic_options = {
+    # Antipsychotic Medications: estimated effect on glucose (+) and max dose mg/day
+    antipsychotic_options = {
     "Olanzapine": (0.25, 20),
     "Risperidone": (0.18, 8),
     "Quetiapine": (0.20, 800),
     "Aripiprazole": (0.12, 30)
-}
+    }
 
-# ------------------ MEDICATION SELECTION ------------------ #
-if diagnosis == "Diabetic":
-    selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
-elif diagnosis == "Pre-diabetic":
+    # ------------------ MEDICATION SELECTION ------------------ #
+    if diagnosis == "Diabetic":
+        selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
+    elif diagnosis == "Pre-diabetic":
     selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
-else:
+    else:
     selected_meds = []
 
-# Doses for diabetic/pre-diabetic meds
-med_doses = {}
-meds_with_dose = list(medication_types.keys()) + list(prediabetic_meds.keys())
-for med in selected_meds:
-    max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
-    med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
+    # Doses for diabetic/pre-diabetic meds
+    med_doses = {}
+    meds_with_dose = list(medication_types.keys()) + list(prediabetic_meds.keys())
+    for med in selected_meds:
+        max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
+        med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
 
-# ------------------ OTHER MEDICATIONS SELECTION ------------------ #
-bp_meds = st.multiselect("Select Blood Pressure Medications:", ["None"] + list(bp_options.keys()))
-chol_meds = st.multiselect("Select Cholesterol Medications:", ["None"] + list(chol_options.keys()))
-steroid_meds = st.multiselect("Select Steroid Medications:", ["None"] + list(steroid_options.keys()))
-antidepressant_meds = st.multiselect("Select Antidepressant Medications:", ["None"] + list(antidepressant_options.keys()))
-antipsychotic_meds = st.multiselect("Select Antipsychotic Medications:", ["None"] + list(antipsychotic_options.keys()))
+    # ------------------ OTHER MEDICATIONS SELECTION ------------------ #
+    bp_meds = st.multiselect("Select Blood Pressure Medications:", ["None"] + list(bp_options.keys()))
+    chol_meds = st.multiselect("Select Cholesterol Medications:", ["None"] + list(chol_options.keys()))
+    steroid_meds = st.multiselect("Select Steroid Medications:", ["None"] + list(steroid_options.keys()))
+    antidepressant_meds = st.multiselect("Select Antidepressant Medications:", ["None"] + list(antidepressant_options.keys()))
+    antipsychotic_meds = st.multiselect("Select Antipsychotic Medications:", ["None"] + list(antipsychotic_options.keys()))
 
-# Doses for blood pressure meds
-bp_doses = {}
-for med in bp_meds:
+    # Doses for blood pressure meds
+    bp_doses = {}
+    for med in bp_meds:
     if med != "None":
         bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, bp_options[med], min(bp_options[med], 50))
 
@@ -306,8 +306,8 @@ if st.button("⏱️ Run Simulation"):
     st.pyplot(fig)
     
 
-elif selected_tab == "📈 CGM Simulation":
-    # CGM Simulation Tab
+# CGM Simulation Tab
+if selected_tab == "📈 CGM Simulation":
     st.header("📈 CGM Data Simulation")
     st.markdown("Simulate continuous glucose monitor (CGM) data based on your inputs.")
 
@@ -353,10 +353,12 @@ elif selected_tab == "📈 CGM Simulation":
         st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
         st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
 
+# Placeholder tabs for future expansion
 elif selected_tab == "📤 CGM Upload":
-    ...
+    st.header("📤 CGM Upload (Coming Soon)")
 
 elif selected_tab == "📡 Real-Time Emulation":
+    st.header("📡 Real-Time CGM Emulation (Coming Soon)")
 
 
 
