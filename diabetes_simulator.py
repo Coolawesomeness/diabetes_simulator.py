@@ -130,8 +130,8 @@ if selected_tab == "🏠 Home":
     # Doses for blood pressure meds
     bp_doses = {}
     for med in bp_meds:
-    if med != "None":
-        bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, bp_options[med], min(bp_options[med], 50))
+        if med != "None":
+            bp_doses[med] = st.slider(f"Dose for Blood Pressure Med: {med} (mg/day)", 0, bp_options[med], min(bp_options[med], 50))
 
 # Doses for cholesterol meds
 chol_doses = {}
