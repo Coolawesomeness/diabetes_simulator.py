@@ -1,9 +1,10 @@
-import streamlit as st
+
+
+if selected_tab == "🏠 Home":
+    import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
 import math
-
-if selected_tab == "🏠 Home":
     # ------------------ TITLE & DISCLAIMER ------------------ #
 st.title("📈 Diabetes Digital Simulator")
 st.markdown("""
