@@ -301,7 +301,8 @@ if st.button("⏱️ Run Simulation"):
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
     
-elif selected_tab == "🧮 Simulation":
+
+elif selected_tab == "📈 CGM Simulation":
     # CGM Simulation Tab
 elif selected_tab == "📈 CGM Simulation":
     st.header("📈 CGM Data Simulation")
@@ -348,9 +349,6 @@ elif selected_tab == "📈 CGM Simulation":
         st.metric("Average Glucose", f"{round(avg_glucose, 1)} mg/dL")
         st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
         st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
-
-elif selected_tab == "📈 CGM Simulation":
-    # 👈 Paste the full code from the canvas here
 
 elif selected_tab == "📤 CGM Upload":
     ...
