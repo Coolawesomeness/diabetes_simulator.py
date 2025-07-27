@@ -304,7 +304,6 @@ if st.button("⏱️ Run Simulation"):
 
 elif selected_tab == "📈 CGM Simulation":
     # CGM Simulation Tab
-elif selected_tab == "📈 CGM Simulation":
     st.header("📈 CGM Data Simulation")
     st.markdown("Simulate continuous glucose monitor (CGM) data based on your inputs.")
 
