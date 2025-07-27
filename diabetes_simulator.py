@@ -3,14 +3,8 @@ import matplotlib.pyplot as plt
 from random import uniform
 import math
 
-# ------------------ PAGE CONFIG ------------------ #
-st.set_page_config(
-    page_title="Diabetes Digital Simulator by Siddharth Tirumalai",
-    page_icon="📈",
-    layout="centered"
-)
-
-# ------------------ TITLE & DISCLAIMER ------------------ #
+if selected_tab == "🏠 Home":
+    # ------------------ TITLE & DISCLAIMER ------------------ #
 st.title("📈 Diabetes Digital Simulator")
 st.markdown("""
 **Created by: Siddharth Tirumalai**  
@@ -306,8 +300,8 @@ if st.button("⏱️ Run Simulation"):
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
 
-
-# CGM Simulation Tab
+elif selected_tab == "🧮 Simulation":
+    # CGM Simulation Tab
 elif selected_tab == "📈 CGM Simulation":
     st.header("📈 CGM Data Simulation")
     st.markdown("Simulate continuous glucose monitor (CGM) data based on your inputs.")
@@ -353,3 +347,16 @@ elif selected_tab == "📈 CGM Simulation":
         st.metric("Average Glucose", f"{round(avg_glucose, 1)} mg/dL")
         st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
         st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
+
+elif selected_tab == "📈 CGM Simulation":
+    # 👈 Paste the full code from the canvas here
+
+elif selected_tab == "📤 CGM Upload":
+    ...
+
+elif selected_tab == "📡 Real-Time Emulation":
+
+
+
+
+
