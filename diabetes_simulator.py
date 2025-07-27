@@ -1,10 +1,14 @@
-
-
-if selected_tab == "🏠 Home":
-    import streamlit as st
+import streamlit as st
 import matplotlib.pyplot as plt
 from random import uniform
+import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
 import math
+
+selected_tab = st.sidebar.radio("Select a tab", ["🏠 Home", "📈 CGM Simulation", "📤 CGM Upload", "📡 Real-Time Emulation"])
+if selected_tab == "🏠 Home":
+    
     # ------------------ TITLE & DISCLAIMER ------------------ #
 st.title("📈 Diabetes Digital Simulator")
 st.markdown("""
