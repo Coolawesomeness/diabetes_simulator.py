@@ -300,7 +300,7 @@ if st.button("⏱️ Run Simulation"):
     ax.set_title("Simulated Blood Glucose Over 7 Days")
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
-
+    
 elif selected_tab == "🧮 Simulation":
     # CGM Simulation Tab
 elif selected_tab == "📈 CGM Simulation":
