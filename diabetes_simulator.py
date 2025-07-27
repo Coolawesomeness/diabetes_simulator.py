@@ -305,3 +305,51 @@ if st.button("⏱️ Run Simulation"):
     ax.set_title("Simulated Blood Glucose Over 7 Days")
     ax.set_ylabel("Glucose (mg/dL)")
     st.pyplot(fig)
+
+
+# CGM Simulation Tab
+elif selected_tab == "📈 CGM Simulation":
+    st.header("📈 CGM Data Simulation")
+    st.markdown("Simulate continuous glucose monitor (CGM) data based on your inputs.")
+
+    st.subheader("CGM Settings")
+    num_days = st.slider("Number of Days to Simulate", 1, 14, 7)
+    readings_per_day = st.slider("Readings per Day", 24, 288, 96)
+
+    total_readings = num_days * readings_per_day
+    time_interval = 24 * 60 // readings_per_day  # minutes between readings
+
+    st.subheader("Simulation Parameters")
+    baseline_glucose = st.slider("Baseline Glucose (mg/dL)", 70, 180, 110)
+    glucose_variability = st.slider("Glucose Variability", 0, 50, 15)
+    meal_effect = st.slider("Meal Effect Amplitude (mg/dL)", 0, 100, 40)
+    exercise_effect = st.slider("Exercise Drop Amplitude (mg/dL)", 0, 80, 25)
+
+    if st.button("Run CGM Simulation"):
+        cgm_data = []
+        timestamps = []
+
+        for day in range(num_days):
+            for reading in range(readings_per_day):
+                minutes_since_start = day * 1440 + reading * time_interval
+                time = datetime.now() + timedelta(minutes=minutes_since_start)
+                meal_bump = meal_effect * np.sin(2 * np.pi * reading / (readings_per_day // 3))
+                exercise_dip = -exercise_effect * np.cos(2 * np.pi * reading / (readings_per_day // 4))
+                random_noise = np.random.normal(0, glucose_variability)
+                value = baseline_glucose + meal_bump + exercise_dip + random_noise
+                cgm_data.append(round(value, 1))
+                timestamps.append(time.strftime("%Y-%m-%d %H:%M"))
+
+        df_cgm = pd.DataFrame({"Timestamp": timestamps, "Glucose (mg/dL)": cgm_data})
+
+        st.subheader("📊 Simulated CGM Data")
+        st.line_chart(df_cgm.set_index("Timestamp"))
+
+        st.subheader("Summary Metrics")
+        avg_glucose = np.mean(cgm_data)
+        time_in_range = sum(70 <= val <= 180 for val in cgm_data) / len(cgm_data) * 100
+        estimated_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
+
+        st.metric("Average Glucose", f"{round(avg_glucose, 1)} mg/dL")
+        st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
+        st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
