@@ -262,8 +262,8 @@ if selected_tab == "🏠 Home":
         # --- INSULIN EFFECT ---
         insulin_effect = 0
         correction_dose = 0
-        if insulin_type in ["Rapid-acting", "Short-acting"] and total_daily_dose > 0:
-            isf = (1800 if insulin_type == "Rapid-acting" else 1500) / total_daily_dose
+        if insulin_type in ["Rapid-acting", "Short-acting"] and tdd > 0:
+            isf = (1800 if insulin_type == "Rapid-acting" else 1500) / tdd
     
             if current_glucose and target_glucose:
                 try:
