@@ -338,7 +338,7 @@ if selected_tab == "📈 CGM Simulation":
                 random_noise = np.random.normal(0, glucose_variability)
                 value = baseline_glucose + meal_bump + exercise_dip + random_noise
                 cgm_data.append(round(value, 1))
-                timestamps.append(time.strftime("%Y-%m-%d %H:%M"))
+                timestamps.append(time.strftime("%Y-%m-%d %I:%M %p"))
 
         df_cgm = pd.DataFrame({"Timestamp": timestamps, "Glucose (mg/dL)": cgm_data})
 
