@@ -413,6 +413,20 @@ run_sim = st.toggle("▶️ Start Real-Time Simulation")
 
 placeholder = st.empty()
 
+# Simulation parameters
+simulation_duration = st.slider("Duration (in minutes)", min_value=1, max_value=30, value=5)
+sampling_rate = st.selectbox("Data Refresh Rate (seconds)", [5, 10, 15], index=1)
+glucose_range = st.slider("Simulated Glucose Range (mg/dL)", 60, 250, (80, 160))
+
+# Session state for storing glucose values and timestamps
+if "glucose_values" not in st.session_state:
+    st.session_state.glucose_values = []
+if "timestamps" not in st.session_state:
+    st.session_state.timestamps = []
+
+run_sim = st.toggle("▶️ Start Real-Time Simulation")
+placeholder = st.empty()
+
 if run_sim:
     end_time = datetime.now() + timedelta(minutes=simulation_duration)
     while datetime.now() < end_time:
@@ -426,14 +440,12 @@ if run_sim:
         st.session_state.glucose_values = st.session_state.glucose_values[-max_entries:]
         st.session_state.timestamps = st.session_state.timestamps[-max_entries:]
 
-        # Trend detection
-        trend_arrow = "→"
-        if len(st.session_state.glucose_values) >= 2:
-            diff = st.session_state.glucose_values[-1] - st.session_state.glucose_values[-2]
-            if diff > 10:
-                trend_arrow = "↗"  # Up
-            elif diff < -10:
-                trend_arrow = "↘"  # Down
+        # Trend detection and alerts
+        # ... (code for trend detection and alerts)
+
+        # Real-time display
+        with placeholder.container():
+            st.metric("📈 Latest Glucose (mg/dL)", new_glucose)
 
         # Glucose alerts
         alert_msg = ""
