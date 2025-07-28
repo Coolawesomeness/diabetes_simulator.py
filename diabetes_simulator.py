@@ -391,7 +391,83 @@ elif selected_tab == "📤 CGM Upload":
             st.error(f"Error reading file: {e}")
 
 elif selected_tab == "📡 Real-Time Emulation":
-    st.header("📡 Real-Time CGM Emulation (Coming Soon)")
+    import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
+import time
+from datetime import datetime, timedelta
+
+st.header("📡 Real-Time Glucose Emulation")
+
+st.markdown("""
+Simulates real-time glucose data as if from a CGM. 
+The values refresh dynamically every few seconds to mimic continuous updates.
+Includes alerts, trend arrows, and correction insulin suggestions.
+""")
+
+# Define simulation parameters
+start_time = datetime.now()
+simulation_duration = st.slider("Duration (in minutes)", min_value=1, max_value=30, value=5)
+sampling_rate = st.selectbox("Data Refresh Rate (seconds)", [5, 10, 15], index=1)
+glucose_range = st.slider("Simulated Glucose Range (mg/dL)", 60, 250, (80, 160))
+
+if "glucose_values" not in st.session_state:
+    st.session_state.glucose_values = []
+if "timestamps" not in st.session_state:
+    st.session_state.timestamps = []
+
+run_sim = st.toggle("▶️ Start Real-Time Simulation")
+
+if run_sim:
+    current_time = datetime.now()
+    new_glucose = np.random.randint(glucose_range[0], glucose_range[1])
+    st.session_state.glucose_values.append(new_glucose)
+    st.session_state.timestamps.append(current_time.strftime('%H:%M:%S'))
+
+    # Keep only last N entries
+    max_entries = int((simulation_duration * 60) / sampling_rate)
+    st.session_state.glucose_values = st.session_state.glucose_values[-max_entries:]
+    st.session_state.timestamps = st.session_state.timestamps[-max_entries:]
+
+    # Trend detection
+    trend_arrow = "→"
+    if len(st.session_state.glucose_values) >= 2:
+        diff = st.session_state.glucose_values[-1] - st.session_state.glucose_values[-2]
+        if diff > 10:
+            trend_arrow = "↗"  # Up
+        elif diff < -10:
+            trend_arrow = "↘"  # Down
+
+    # Glucose alerts
+    alert_msg = ""
+    if new_glucose < 70:
+        alert_msg = "🚨 Hypoglycemia Risk!"
+    elif new_glucose > 180:
+        alert_msg = "🚨 Hyperglycemia Risk!"
+
+    # Correction dose suggestion (using ISF = 50 mg/dL per unit as example)
+    correction_dose = max(0, round((new_glucose - 120) / 50, 1)) if new_glucose > 130 else 0
+
+    # Display metrics
+    st.metric("📈 Latest Glucose (mg/dL)", new_glucose, help=alert_msg)
+    st.metric("Trend", trend_arrow)
+    avg_glucose = round(np.mean(st.session_state.glucose_values), 1)
+    st.metric("📊 Avg Glucose (mg/dL)", avg_glucose)
+    if correction_dose > 0:
+        st.markdown(f"**🎒 Correction Dose Suggestion:** {correction_dose} units of rapid insulin")
+
+    # Real-time chart
+    fig, ax = plt.subplots()
+    ax.plot(st.session_state.timestamps, st.session_state.glucose_values, marker='o', color='purple')
+    ax.set_title("Live Glucose Emulation")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Glucose (mg/dL)")
+    ax.tick_params(axis='x', rotation=45)
+    ax.grid(True)
+    st.pyplot(fig)
+
+    # Optional delay for realism
+    time.sleep(sampling_rate)
 
 
 
