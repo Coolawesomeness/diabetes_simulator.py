@@ -463,7 +463,8 @@ if run_sim:
             ax.grid(True)
             st.pyplot(fig)
 
-        time.sleep(sampling_rate)
+        st.time.sleep(sampling_rate)
+
 
 
 
