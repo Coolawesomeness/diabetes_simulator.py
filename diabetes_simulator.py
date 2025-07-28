@@ -391,11 +391,6 @@ elif selected_tab == "📤 CGM Upload":
             st.error(f"Error reading file: {e}")
 
 elif selected_tab == "📡 Real-Time Emulation":
-    import streamlit as st
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import time
-    from datetime import datetime, timedelta
     st.header("📡 Real-Time Glucose Emulation")
 
 st.markdown("""
