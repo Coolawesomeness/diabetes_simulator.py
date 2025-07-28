@@ -461,7 +461,6 @@ if run_sim:
             ax.set_ylabel("Glucose (mg/dL)")
             ax.tick_params(axis='x', rotation=45)
             ax.grid(True)
-            time.sleep(sampling_rate)
             st.pyplot(fig)
 
             
