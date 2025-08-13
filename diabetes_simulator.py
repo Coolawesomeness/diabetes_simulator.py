@@ -354,6 +354,24 @@ if selected_tab == "📈 CGM Simulation":
         st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
         st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
 
+        # Recommendations based on average glucose and time in range
+        recommendations = []
+        if avg_glucose < 70:
+            recommendations.append("Your average glucose is below the target range. Consider consulting your healthcare provider.")
+        elif avg_glucose > 180:
+            recommendations.append("Your average glucose is above the target range. Focus on diet and medication adherence.")
+        else:
+            recommendations.append("Great job! Your average glucose is within the target range.")
+
+        if time_in_range < 70:
+            recommendations.append("Try to increase your time in range by monitoring your diet and exercise more closely.")
+        elif time_in_range > 90:
+            recommendations.append("Excellent! You're spending a lot of time in the target range. Keep it up!")
+
+        st.subheader("💡 Recommendations")
+        for rec in recommendations:
+            st.write(f"- {rec}")
+
 # Placeholder tabs for future expansion
 elif selected_tab == "📤 CGM Upload":
     st.header("📤 Upload CGM Data")
