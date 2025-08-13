@@ -354,24 +354,23 @@ if selected_tab == "📈 CGM Simulation":
         st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
         st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
 
-        # Recommendations based on average glucose and time in range
-        recommendations = []
-        if avg_glucose < 70:
-            recommendations.append("Your average glucose is below the target range. Consider consulting your healthcare provider.")
-        elif avg_glucose > 180:
-            recommendations.append("Your average glucose is above the target range. Focus on diet and medication adherence.")
-        else:
-            recommendations.append("Great job! Your average glucose is within the target range.")
+        # Summary Metrics
+avg_glucose = np.mean(cgm_data)
+time_in_range = sum(70 <= val <= 180 for val in cgm_data) / len(cgm_data) * 100
+estimated_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
 
-        if time_in_range < 70:
-            recommendations.append("Try to increase your time in range by monitoring your diet and exercise more closely.")
-        elif time_in_range > 90:
-            recommendations.append("Excellent! You're spending a lot of time in the target range. Keep it up!")
+st.metric("Average Glucose", f"{round(avg_glucose, 1)} mg/dL")
+st.metric("Time in Range (70-180 mg/dL)", f"{round(time_in_range, 1)}%")
+st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
 
-        st.subheader("💡 Recommendations")
-        for rec in recommendations:
-            st.write(f"- {rec}")
-
+# Recommendations based on average glucose
+st.subheader("📋 Recommendations")
+if avg_glucose < 70:
+    st.warning("Your average glucose level is below the normal range. Consider consulting your healthcare provider.")
+elif 70 <= avg_glucose <= 180:
+    st.success("Great job! Your average glucose level is within the normal range. Keep up the good work!")
+else:
+    st.error("Your average glucose level is above the normal range. Consider reviewing your diet and medication with your healthcare provider.")
 # Placeholder tabs for future expansion
 elif selected_tab == "📤 CGM Upload":
     st.header("📤 Upload CGM Data")
