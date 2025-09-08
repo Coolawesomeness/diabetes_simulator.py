@@ -372,40 +372,7 @@ elif 70 <= avg_glucose <= 180:
 else:
     st.error("Your average glucose level is above the normal range. Consider reviewing your diet and medication with your healthcare provider.")
 # Placeholder tabs for future expansion
-elif selected_tab == "📤 CGM Upload":
-    st.header("📤 Upload CGM Data")
-    st.markdown("Upload a CSV file with CGM readings to analyze your glucose trends.")
 
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
-
-    if uploaded_file is not None:
-        try:
-            df_uploaded = pd.read_csv(uploaded_file)
-
-            # Try standardizing columns
-            df_uploaded.columns = [col.strip().lower() for col in df_uploaded.columns]
-            if "timestamp" in df_uploaded.columns and ("glucose" in df_uploaded.columns or "glucose (mg/dl)" in df_uploaded.columns):
-                glucose_col = "glucose" if "glucose" in df_uploaded.columns else "glucose (mg/dl)"
-                df_uploaded["Timestamp"] = pd.to_datetime(df_uploaded["timestamp"])
-                df_uploaded["Glucose (mg/dL)"] = pd.to_numeric(df_uploaded[glucose_col], errors="coerce")
-                df_uploaded = df_uploaded.dropna(subset=["Glucose (mg/dL)"])
-
-                st.subheader("📊 Uploaded CGM Data")
-                st.line_chart(df_uploaded.set_index("Timestamp")["Glucose (mg/dL)"])
-
-                st.subheader("Summary Metrics")
-                avg_glucose = df_uploaded["Glucose (mg/dL)"].mean()
-                time_in_range = df_uploaded["Glucose (mg/dL)"].between(70, 180).mean() * 100
-                estimated_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
-
-                st.metric("Average Glucose", f"{avg_glucose:.1f} mg/dL")
-                st.metric("Time in Range (70-180 mg/dL)", f"{time_in_range:.1f}%")
-                st.metric("Estimated HbA1c", f"{estimated_hba1c}%")
-            else:
-                st.error("Make sure your CSV includes 'Timestamp' and 'Glucose (mg/dL)' columns.")
-
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
 
 
 
