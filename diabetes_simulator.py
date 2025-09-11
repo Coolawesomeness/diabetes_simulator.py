@@ -7,10 +7,6 @@ from random import uniform
 # ------------------ APP LAYOUT ------------------ #
 st.set_page_config(page_title="Diabetes Digital Twin", layout="wide")
 
-# Store CGM data globally across tabs
-if "cgm_data" not in st.session_state:
-    st.session_state.cgm_data = None
-
 # Sidebar Navigation
 tabs = ["🏠 Home", "📊 CGM Simulation", "📂 CGM Upload", "📝 Action Plan"]
 selected_tab = st.sidebar.radio("Navigate", tabs)
@@ -38,6 +34,94 @@ if selected_tab == "🏠 Home":
     # ------------------ DIAGNOSIS ------------------ #
     diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
 
+    # ------------------ MEDICATION OPTIONS ------------------ #
+    medication_types = {
+        "Insulin": (1.00, 200),
+        "Sulfonylureas": (0.70, 20),
+        "Metformin": (0.50, 2000),
+        "GLP-1 Receptor Agonists": (0.60, 5),
+        "SGLT2 Inhibitors": (0.40, 25),
+        "Thiazolidinediones (TZDs)": (0.45, 45),
+        "DPP-4 Inhibitors": (0.30, 100),
+        "Meglitinides": (0.55, 16),
+        "Alpha-glucosidase Inhibitors": (0.35, 100),
+        "Amylin Analogs": (0.25, 120)
+    }
+
+    prediabetic_meds = {
+        "Metformin": (0.40, 2000),
+        "Lifestyle Coaching": (0.30, 1),
+        "Weight Loss Agents": (0.20, 200),
+        "GLP-1 Receptor Agonists": (0.45, 5),
+        "Alpha-glucosidase Inhibitors": (0.25, 100),
+        "Thiazolidinediones (TZDs)": (0.35, 45),
+        "Acarbose": (0.30, 100),
+        "Intermittent Fasting Protocols": (0.25, 1)
+    }
+
+    bp_options = {
+        "Beta Blockers": 200,
+        "ACE Inhibitors": 40,
+        "Angiotensin II Receptor Blockers (ARBs)": 320,
+        "Calcium Channel Blockers": 240,
+        "Diuretics": 100,
+        "Alpha Blockers": 20,
+        "Vasodilators": 40,
+        "Central Agonists": 100
+    }
+
+    chol_options = {
+        "Statins": 80,
+        "Fibrates": 200,
+        "Niacin": 2000,
+        "Bile Acid Sequestrants": 15000,
+        "Cholesterol Absorption Inhibitors": 10,
+        "PCSK9 Inhibitors": 420,
+        "Omega-3 Fatty Acids": 4000
+    }
+
+    steroid_options = {
+        "Prednisone": (0.20, 60),
+        "Hydrocortisone": (0.15, 100),
+        "Dexamethasone": (0.25, 20),
+        "Methylprednisolone": (0.18, 80)
+    }
+
+    antidepressant_options = {
+        "SSRIs": (0.10, 100),
+        "SNRIs": (0.12, 200),
+        "Tricyclics": (0.15, 150),
+        "MAO Inhibitors": (0.10, 60)
+    }
+
+    antipsychotic_options = {
+        "Olanzapine": (0.25, 20),
+        "Risperidone": (0.18, 8),
+        "Quetiapine": (0.20, 800),
+        "Aripiprazole": (0.12, 30)
+    }
+
+    # ------------------ MEDICATION SELECTION ------------------ #
+    if diagnosis == "Diabetic":
+        selected_meds = st.multiselect("Select Anti-Diabetic Medications:", list(medication_types.keys()))
+    elif diagnosis == "Pre-diabetic":
+        selected_meds = st.multiselect("Select Pre-Diabetic Medications:", list(prediabetic_meds.keys()))
+    else:
+        selected_meds = []
+
+    med_doses = {}
+    meds_with_dose = list(medication_types.keys()) + list(prediabetic_meds.keys())
+    for med in selected_meds:
+        max_dose = medication_types[med][1] if diagnosis == "Diabetic" else prediabetic_meds[med][1]
+        med_doses[med] = st.slider(f"Dose for {med} (mg/day)", 0, max_dose, min(max_dose, 500))
+
+    # ------------------ OTHER MEDICATIONS ------------------ #
+    bp_meds = st.multiselect("Select Blood Pressure Medications:", ["None"] + list(bp_options.keys()))
+    chol_meds = st.multiselect("Select Cholesterol Medications:", ["None"] + list(chol_options.keys()))
+    steroid_meds = st.multiselect("Select Steroid Medications:", ["None"] + list(steroid_options.keys()))
+    antidepressant_meds = st.multiselect("Select Antidepressant Medications:", ["None"] + list(antidepressant_options.keys()))
+    antipsychotic_meds = st.multiselect("Select Antipsychotic Medications:", ["None"] + list(antipsychotic_options.keys()))
+
     # ------------------ INSULIN SENSITIVITY FACTOR ------------------ #
     st.subheader("💉 Insulin Sensitivity Calculator (Outpatient Use Only)")
     insulin_type = st.selectbox("Select Insulin Type", ["Rapid-acting", "Short-acting (Regular)", "Intermediate-acting", "Long-acting"])
@@ -61,11 +145,7 @@ if selected_tab == "🏠 Home":
     fast_food = st.slider("Fast food meals/week", 0, 14, 3)
     cook_freq = st.slider("Home-cooked meals/week", 0, 21, 5)
 
-    # Calculate diet score
     diet_score = max(0, (veg_servings / 7) * 3 + (fruit_servings / 7) * 2 - sugary_snacks - fast_food + (cook_freq / 7) * 2)
-    st.session_state.diet_score = diet_score
-    st.session_state.exercise = exercise
-    st.session_state.sleep_hours = sleep_hours
 
     # ------------------ SIMULATION ------------------ #
     if st.button("⏱️ Run Simulation"):
@@ -115,9 +195,6 @@ elif selected_tab == "📊 CGM Simulation":
 
     st.line_chart(df.set_index("Time"))
 
-    # Save simulated data
-    st.session_state.cgm_data = df
-
     st.download_button("📥 Download Simulated CGM CSV", df.to_csv(index=False), "simulated_cgm.csv", "text/csv")
 
 # ========================================================= #
@@ -129,11 +206,8 @@ elif selected_tab == "📂 CGM Upload":
 
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
-        st.session_state.cgm_data = df
         st.write(df.head())
         st.line_chart(df.set_index(df.columns[0]))
-
-
 
 # ========================================================= #
 # ================== ACTION PLAN TAB ====================== #
@@ -141,96 +215,14 @@ elif selected_tab == "📂 CGM Upload":
 elif selected_tab == "📝 Action Plan":
     st.title("📝 Personalized Action Plan")
 
-    if st.session_state.cgm_data is None:
-        st.warning("⚠️ Please upload or simulate CGM data first.")
-    else:
-        df = st.session_state.cgm_data.copy()
-        glucose = df[df.columns[1]]  # Assume 2nd column is glucose
+    st.markdown("""
+    Based on your CGM trends and lifestyle inputs, here are suggestions:
+    """)
 
-        # Compute metrics
-        avg_glucose = glucose.mean()
-        time_in_range = np.mean((glucose >= 70) & (glucose <= 180)) * 100
-        hypo = np.mean(glucose < 70) * 100
-        hyper = np.mean(glucose > 180) * 100
-        est_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
-
-        # Display metrics
-        st.metric("📊 Average Glucose", f"{avg_glucose:.1f} mg/dL")
-        st.metric("📊 Estimated HbA1c", f"{est_hba1c}%")
-        st.metric("✅ Time in Range (70–180)", f"{time_in_range:.1f}%")
-        st.metric("⚠️ Hypoglycemia (<70)", f"{hypo:.1f}%")
-        st.metric("⚠️ Hyperglycemia (>180)", f"{hyper:.1f}%")
-
-        # Lifestyle guidance based on metrics
-        st.subheader("📋 Lifestyle Recommendations")
-
-        if avg_glucose > 150:
-            st.error("High average glucose – consider improving diet or adjusting medications.")
-        elif avg_glucose < 80:
-            st.warning("Low average glucose – risk of hypoglycemia, check insulin/meds with provider.")
-        else:
-            st.success("Glucose levels are in good control!")
-
-        if time_in_range < 70:
-            st.warning("Time in Range is below recommended (>70%). Try improving consistency in meals and exercise.")
-        if hypo > 5:
-            st.error("Frequent hypoglycemia – reduce insulin or adjust meal timing.")
-        if hyper > 30:
-            st.error("Frequent hyperglycemia – check carb intake, exercise, and medication adherence.")
-
-        # ------------------ EXERCISE RECOMMENDATIONS ------------------ #
-        st.subheader("💪 Exercise Plan")
-
-        if avg_glucose > 140 or st.session_state.get("exercise", 0) < 30:
-            st.info("Recommended exercises for today:")
-
-            exercises = {
-                "🚶 Brisk Walking": 20,
-                "🚴 Cycling": 15,
-                "🏋️ Resistance Training": 25,
-                "🧘 Yoga/Stretching": 15
-            }
-
-            choice = st.selectbox("Pick an exercise:", list(exercises.keys()))
-            duration = exercises[choice]
-
-            st.write(f"⏱ Recommended duration: **{duration} minutes**")
-
-            if st.button("▶️ Start Exercise Timer"):
-                with st.empty():
-                    for i in range(duration, 0, -1):
-                        st.metric("Time Remaining", f"{i} min")
-                        time.sleep(1)
-                st.success("✅ Exercise complete! Great job 🎉")
-
-        else:
-            st.success("👍 Exercise level looks good today!")
-
-        # ------------------ MEAL LOGGING ------------------ #
-        st.subheader("🍽️ Meal Logging & Nutrition Advice")
-
-        meal = st.text_input("What did you eat?")
-        calories = st.number_input("Estimated Calories", min_value=0, max_value=2000, step=50)
-
-        if st.button("Analyze Meal"):
-            if calories > 800:
-                st.error("⚠️ That’s a high-calorie meal. Try reducing portion size or balancing with more veggies.")
-            elif calories < 300:
-                st.warning("🤔 That meal seems too light — make sure you’re getting enough protein and fiber.")
-            else:
-                st.success("✅ Balanced calorie intake for one meal!")
-
-            # Simple keyword checks
-            unhealthy = ["pizza", "burger", "fries", "soda", "candy"]
-            healthy = ["salad", "chicken", "fish", "tofu", "vegetables", "brown rice"]
-
-            if any(food in meal.lower() for food in unhealthy):
-                st.error("⚠️ That meal contains refined carbs or fried foods. Try swapping for whole grains or grilled options.")
-            elif any(food in meal.lower() for food in healthy):
-                st.success("💡 Great choice! High nutrient value meal.")
-            else:
-                st.info("ℹ️ Couldn’t identify meal quality — but portion size and balance matter most.")
-
+    st.info("✅ Increase vegetables and fruits to improve glucose control.")
+    st.info("✅ Aim for 30 mins daily exercise.")
+    st.info("✅ Reduce sugary snacks and processed foods.")
+    st.info("✅ Ensure 7–9 hrs of sleep nightly.")
 
 
 
