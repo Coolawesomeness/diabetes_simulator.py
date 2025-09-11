@@ -133,6 +133,8 @@ elif selected_tab == "📂 CGM Upload":
         st.write(df.head())
         st.line_chart(df.set_index(df.columns[0]))
 
+
+
 # ========================================================= #
 # ================== ACTION PLAN TAB ====================== #
 # ========================================================= #
@@ -176,16 +178,58 @@ elif selected_tab == "📝 Action Plan":
         if hyper > 30:
             st.error("Frequent hyperglycemia – check carb intake, exercise, and medication adherence.")
 
-        # Use lifestyle inputs from Home tab if available
-        if "diet_score" in st.session_state:
-            if st.session_state.diet_score < 10:
-                st.warning("🍔 Diet score is low – increase vegetables and reduce processed foods.")
-        if "exercise" in st.session_state:
-            if st.session_state.exercise < 30:
-                st.warning("🏃 Try to increase daily exercise to at least 30 mins.")
-        if "sleep_hours" in st.session_state:
-            if st.session_state.sleep_hours < 7:
-                st.warning("😴 You are sleeping less than 7 hours. Aim for 7–9 hrs nightly.")
+        # ------------------ EXERCISE RECOMMENDATIONS ------------------ #
+        st.subheader("💪 Exercise Plan")
+
+        if avg_glucose > 140 or st.session_state.get("exercise", 0) < 30:
+            st.info("Recommended exercises for today:")
+
+            exercises = {
+                "🚶 Brisk Walking": 20,
+                "🚴 Cycling": 15,
+                "🏋️ Resistance Training": 25,
+                "🧘 Yoga/Stretching": 15
+            }
+
+            choice = st.selectbox("Pick an exercise:", list(exercises.keys()))
+            duration = exercises[choice]
+
+            st.write(f"⏱ Recommended duration: **{duration} minutes**")
+
+            if st.button("▶️ Start Exercise Timer"):
+                with st.empty():
+                    for i in range(duration, 0, -1):
+                        st.metric("Time Remaining", f"{i} min")
+                        time.sleep(1)
+                st.success("✅ Exercise complete! Great job 🎉")
+
+        else:
+            st.success("👍 Exercise level looks good today!")
+
+        # ------------------ MEAL LOGGING ------------------ #
+        st.subheader("🍽️ Meal Logging & Nutrition Advice")
+
+        meal = st.text_input("What did you eat?")
+        calories = st.number_input("Estimated Calories", min_value=0, max_value=2000, step=50)
+
+        if st.button("Analyze Meal"):
+            if calories > 800:
+                st.error("⚠️ That’s a high-calorie meal. Try reducing portion size or balancing with more veggies.")
+            elif calories < 300:
+                st.warning("🤔 That meal seems too light — make sure you’re getting enough protein and fiber.")
+            else:
+                st.success("✅ Balanced calorie intake for one meal!")
+
+            # Simple keyword checks
+            unhealthy = ["pizza", "burger", "fries", "soda", "candy"]
+            healthy = ["salad", "chicken", "fish", "tofu", "vegetables", "brown rice"]
+
+            if any(food in meal.lower() for food in unhealthy):
+                st.error("⚠️ That meal contains refined carbs or fried foods. Try swapping for whole grains or grilled options.")
+            elif any(food in meal.lower() for food in healthy):
+                st.success("💡 Great choice! High nutrient value meal.")
+            else:
+                st.info("ℹ️ Couldn’t identify meal quality — but portion size and balance matter most.")
 
 
 
