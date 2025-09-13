@@ -137,15 +137,29 @@ if selected_tab == "🏠 Home":
     if isf:
         st.success(f"Estimated ISF: 1 unit lowers glucose by ~{isf} mg/dL")
 
-    # ------------------ SLEEP AND DIET ------------------ #
-    sleep_hours = st.slider("Sleep (hours/night)", 3, 12, 7)
-    veg_servings = st.slider("Vegetable servings/week", 0, 70, 21)
-    fruit_servings = st.slider("Fruit servings/week", 0, 70, 14)
-    sugary_snacks = st.slider("Sugary snacks/week", 0, 70, 14)
-    fast_food = st.slider("Fast food meals/week", 0, 14, 3)
-    cook_freq = st.slider("Home-cooked meals/week", 0, 21, 5)
-
-    diet_score = max(0, (veg_servings / 7) * 3 + (fruit_servings / 7) * 2 - sugary_snacks - fast_food + (cook_freq / 7) * 2)
+   # ------------------ SLEEP AND HORMONAL SURVEY ------------------#
+    st.subheader("🛌 Sleep and Hormonal Factors")
+    
+    sleep_hours = st.slider("Average Sleep Duration (hours/night)", 3, 12, 7)
+    is_menstruating = st.checkbox("Is the patient currently menstruating?", value=False)
+    is_pregnant = st.checkbox("Is the patient currently pregnant?", value=False)
+    # ------------------ DIET QUESTIONNAIRE ------------------ #
+    st.subheader("🍽️ Diet Quality Questionnaire")
+    
+    veg_servings = st.slider("How many servings of vegetables per week?", 0, 70, 21)
+    fruit_servings = st.slider("How many servings of fruits per week?", 0, 70, 14)
+    sugary_snacks = st.slider("How many sugary snacks or drinks per week?", 0, 70, 14)
+    fast_food = st.slider("How many fast food meals per week?", 0, 14, 3)
+    cook_freq = st.slider("How often do you cook meals at home per week?", 0, 21, 5)
+    
+    diet_score = 0
+    diet_score += (veg_servings / 7) * 3
+    diet_score += (fruit_servings / 7) * 2
+    diet_score -= sugary_snacks
+    diet_score -= fast_food
+    diet_score += (cook_freq / 7) * 2
+    
+    diet_score = max(0, diet_score)
 
     # ------------------ SIMULATION ------------------ #
     if st.button("⏱️ Run Simulation"):
