@@ -229,14 +229,73 @@ elif selected_tab == "📂 CGM Upload":
 elif selected_tab == "📝 Action Plan":
     st.title("📝 Personalized Action Plan")
 
-    st.markdown("""
-    Based on your CGM trends and lifestyle inputs, here are suggestions:
-    """)
+    # ----------------- MEAL LOGGING ----------------- #
+    st.header("🍽️ Meal Logger & Calorie Check")
 
-    st.info("✅ Increase vegetables and fruits to improve glucose control.")
-    st.info("✅ Aim for 30 mins daily exercise.")
-    st.info("✅ Reduce sugary snacks and processed foods.")
-    st.info("✅ Ensure 7–9 hrs of sleep nightly.")
+    if "meals" not in st.session_state:
+        st.session_state["meals"] = []
+
+    with st.form("meal_form", clear_on_submit=True):
+        meal_name = st.text_input("Meal Name")
+        meal_calories = st.number_input("Calories", min_value=0, step=10)
+        submitted = st.form_submit_button("➕ Add Meal")
+        if submitted and meal_name and meal_calories > 0:
+            st.session_state["meals"].append({"meal": meal_name, "calories": meal_calories})
+
+    if st.session_state["meals"]:
+        df_meals = pd.DataFrame(st.session_state["meals"])
+        st.table(df_meals)
+
+        total_calories = sum(m["calories"] for m in st.session_state["meals"])
+        st.metric("Total Calories Consumed", f"{total_calories} kcal")
+
+        if "daily_calories" in st.session_state:
+            daily_target = st.session_state["daily_calories"]
+            if total_calories < daily_target * 0.9:
+                st.success(f"✅ You’re under your target ({daily_target} kcal). Keep fueling your body!")
+            elif total_calories <= daily_target * 1.1:
+                st.info(f"⚖️ You’re right on track! ({total_calories}/{daily_target} kcal)")
+            else:
+                st.error(f"⚠️ You’ve exceeded your daily target ({daily_target} kcal). Consider lighter meals later.")
+
+    st.divider()
+
+    # ----------------- EXERCISE RECOMMENDER ----------------- #
+    st.header("🏃 Exercise Recommendations")
+
+    if "exercise" in st.session_state and st.session_state.exercise < 30:
+        st.warning("You’re getting less than 30 mins of exercise daily. Try one of these:")
+
+        exercises = {
+            "🚶 Walking": 20,
+            "🚴 Cycling": 15,
+            "🧘 Yoga": 20,
+            "🏋️ Strength Training": 25,
+            "🕺 Dance": 15
+        }
+
+        for ex, mins in exercises.items():
+            col1, col2 = st.columns([2,1])
+            with col1:
+                st.markdown(f"**{ex}** — {mins} mins")
+            with col2:
+                if st.button(f"▶️ Start {ex}", key=ex):
+                    st.session_state["exercise_timer"] = {"exercise": ex, "remaining": mins}
+
+    if "exercise_timer" in st.session_state:
+        ex_info = st.session_state["exercise_timer"]
+        st.subheader(f"⏱️ {ex_info['exercise']} Timer")
+        if ex_info["remaining"] > 0:
+            st.info(f"{ex_info['remaining']} minutes remaining")
+            # Decrease timer on refresh
+            st.session_state["exercise_timer"]["remaining"] -= 1
+            st.experimental_rerun()
+        else:
+            st.success(f"✅ {ex_info['exercise']} complete! Great job!")
+            del st.session_state["exercise_timer"]
+
+    else:
+        st.success("✅ You’re meeting your daily exercise goal!")
 
 
 
