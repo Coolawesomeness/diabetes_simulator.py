@@ -28,7 +28,7 @@ if "exercise_timer" not in st.session_state:
     st.session_state.exercise_timer = None
 
 # ------------------ SIDEBAR NAVIGATION ------------------ #
-TABS = ["🏠 Home", "📊 CGM Simulation", "📂 CGM Upload", "📝 Action Plan", "🔬 How Diabetes Works (Interactive)"]
+TABS = ["🏠 Home", "📊 CGM Simulation", "📂 CGM Upload", "📝 Action Plan", "🔬 Diabetes Education(Interactive)"]
 selected_tab = st.sidebar.radio("Navigate", TABS)
 
 # ===================== TAB: HOME ===================== #
@@ -487,7 +487,7 @@ elif selected_tab == "📝 Action Plan":
 from pyvis.network import Network
 import streamlit.components.v1 as components
 
-elif selected_tab == "📊 Diabetes Education":
+elif selected_tab == "📊 Diabetes Education(Interactive)":
     st.title("📊 Interactive Diabetes Education Diagram")
 
     st.markdown("""
