@@ -485,10 +485,11 @@ elif selected_tab == "📝 Action Plan":
                 st.success(f"✅ {et['exercise']} complete! Great job 🎉")
                 st.session_state.exercise_timer = None
 
-from pyvis.network import Network
-import streamlit.components.v1 as components
+
 
 elif selected_tab == "🔬 Diabetes Education(Interactive)":
+    from pyvis.network import Network
+    import streamlit.components.v1 as components
     st.title("🔬 How Diabetes Works — Interactive Diagram")
     st.markdown("""
     Click any node to see an explanation and practical tips.  
