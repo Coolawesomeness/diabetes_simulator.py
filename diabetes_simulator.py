@@ -487,48 +487,233 @@ elif selected_tab == "📝 Action Plan":
 from pyvis.network import Network
 import streamlit.components.v1 as components
 
-elif selected_tab == "🔬 Diabetes Education(Interactive)":
-    st.title("📊 Interactive Diabetes Education Diagram")
-
+elif selected_tab == "🔬 How Diabetes Works (Interactive)":
+    st.title("🔬 How Diabetes Works — Interactive Diagram (Improved)")
     st.markdown("""
-    This interactive diagram explains the **progression of diabetes** and how 
-    different factors (diet, exercise, medication, hormones) influence blood sugar.
+    Click any node to see an explanation and practical tips.  
+    Use mouse drag to move nodes, scroll to zoom, and click to get details on the right panel.
     """)
 
-    # Build the PyVis network
-    net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="black", directed=True)
+    d3_html = """
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+        #container { display: flex; gap: 12px; align-items: flex-start; padding: 8px; }
+        #chart { flex: 1 1 auto; min-width: 580px; height: 640px; background: linear-gradient(180deg, #ffffff, #f7fbff); border-radius: 8px; box-shadow: 0 6px 18px rgba(23,43,77,0.06); }
+        #info { width: 360px; min-width: 260px; background:#ffffff; border-radius:8px; padding:14px; box-shadow: 0 6px 18px rgba(23,43,77,0.06); }
+        #info h3 { margin: 0 0 8px 0; }
+        #tips ul { margin: 6px 0 0 18px; padding: 0; }
+        .node text { font-family: inherit; pointer-events: none; }
+        .legend { font-size: 13px; margin-top: 8px; color:#444; }
+        .caption { font-size: 13px; color:#666; margin-top:6px; }
+      </style>
+    </head>
+    <body>
+      <div id="container">
+        <div id="chart"></div>
+        <div id="info">
+          <h3>Click a node to learn more</h3>
+          <div id="desc">Select a node on the left diagram.</div>
+          <div id="tips"></div>
+          <div class="legend"><strong>Tip:</strong> drag nodes to rearrange • scroll to zoom</div>
+          <div class="caption">Practical tips are plain-language actions you can try today.</div>
+        </div>
+      </div>
 
-    # Customize physics for better spacing
-    net.barnes_hut(gravity=-2000, central_gravity=0.2, spring_length=150, spring_strength=0.05)
+      <script src="https://d3js.org/d3.v7.min.js"></script>
+      <script>
+        // width/height for svg (chart div defines size)
+        const container = document.getElementById('chart');
+        const width = container.clientWidth || 800;
+        const height = 640;
 
-    # Add nodes with categories and custom colors
-    net.add_node("Glucose", title="Main energy source for the body", color="#ff6666", shape="ellipse", size=30)
-    net.add_node("Insulin", title="Hormone that lowers blood sugar by moving glucose into cells", color="#66b3ff", shape="ellipse", size=25)
-    net.add_node("Cells", title="Use glucose for energy when insulin is present", color="#99ff99", shape="ellipse", size=25)
-    net.add_node("Liver", title="Stores and releases glucose", color="#ffcc99", shape="ellipse", size=25)
-    net.add_node("Exercise", title="Increases insulin sensitivity", color="#ffb366", shape="box", size=20)
-    net.add_node("Diet", title="Food intake raises or lowers glucose", color="#ffff66", shape="box", size=20)
-    net.add_node("Medications", title="Helps control glucose levels", color="#c266ff", shape="box", size=20)
-    net.add_node("Hormones", title="Other hormones can raise glucose (stress, steroids)", color="#ff99cc", shape="box", size=20)
-    net.add_node("Diabetes", title="When insulin does not work properly or not enough is made", color="#ff4d4d", shape="diamond", size=35)
+        const nodes = [
+          {id: "Food", emoji: "🍎", label: "Food (carbs)"},
+          {id: "Digestion", emoji: "🔬", label: "Digestion"},
+          {id: "Blood Glucose", emoji: "🩸", label: "Blood Glucose"},
+          {id: "Pancreas", emoji: "🏭", label: "Pancreas (β-cells)"},
+          {id: "Insulin", emoji: "💉", label: "Insulin"},
+          {id: "Cells", emoji: "🦴", label: "Body Cells"},
+          {id: "Liver", emoji: "🍖", label: "Liver"},
+          {id: "Kidneys", emoji: "🧪", label: "Kidneys"},
+          {id: "Insulin Resistance", emoji: "🚧", label: "Insulin Resistance"}
+        ];
 
-    # Add relationships (edges)
-    net.add_edge("Glucose", "Insulin", title="Triggers release")
-    net.add_edge("Insulin", "Cells", title="Moves glucose into cells")
-    net.add_edge("Liver", "Glucose", title="Releases stored glucose")
-    net.add_edge("Exercise", "Insulin", title="Makes insulin work better")
-    net.add_edge("Diet", "Glucose", title="Raises glucose after meals")
-    net.add_edge("Medications", "Insulin", title="Helps insulin lower glucose")
-    net.add_edge("Hormones", "Glucose", title="Stress/steroids increase glucose")
-    net.add_edge("Insulin", "Diabetes", title="Insulin resistance or deficiency → diabetes")
-    net.add_edge("Glucose", "Diabetes", title="High glucose leads to diabetes")
+        const links = [
+          {source:"Food", target:"Digestion"},
+          {source:"Digestion", target:"Blood Glucose"},
+          {source:"Blood Glucose", target:"Pancreas"},
+          {source:"Pancreas", target:"Insulin"},
+          {source:"Insulin", target:"Cells"},
+          {source:"Insulin", target:"Liver"},
+          {source:"Blood Glucose", target:"Kidneys"},
+          {source:"Insulin Resistance", target:"Cells"},
+          {source:"Insulin Resistance", target:"Liver"},
+          {source:"Insulin Resistance", target:"Pancreas"}
+        ];
 
-    # Generate diagram HTML
-    net.save_graph("diabetes_network.html")
+        // explanations
+        const explanations = {
+          "Food": {
+            "desc":"Foods that contain carbohydrates are broken down into glucose during digestion, increasing blood sugar.",
+            "tips":["Pick whole grains and fibre-rich foods", "Pair carbs with protein or fat to slow absorption"]
+          },
+          "Digestion": {
+            "desc":"Digestion releases glucose into the bloodstream after meals.",
+            "tips":["Slower digestion = smaller glucose spikes", "Include fibre and protein"]
+          },
+          "Blood Glucose": {
+            "desc":"The sugar circulating in your blood. The body tries to keep it within a safe range.",
+            "tips":["Aim for stable meals, regular activity, and follow therapy"]
+          },
+          "Pancreas": {
+            "desc":"Beta-cells in the pancreas sense glucose and release insulin to help clear it.",
+            "tips":["Chronic high glucose stresses β-cells", "Medications or lifestyle changes can support function"]
+          },
+          "Insulin": {
+            "desc":"Hormone that signals tissues to take up glucose and the liver to store it.",
+            "tips":["Improve sensitivity with exercise & weight loss", "Match insulin timing to meals"]
+          },
+          "Cells": {
+            "desc":"Muscle and fat cells take up glucose when signalled by insulin — exercise improves uptake.",
+            "tips":["Even a short walk after meals helps", "Resistance training builds glucose-using muscle"]
+          },
+          "Liver": {
+            "desc":"Stores glucose as glycogen and releases it when needed — may be dysregulated in diabetes.",
+            "tips":["Consistent meal timing helps", "Some meds modify liver glucose output"]
+          },
+          "Kidneys": {
+            "desc":"If blood glucose is very high, kidneys excrete glucose into urine — long-term high glucose damages kidneys.",
+            "tips":["Protect kidneys by keeping average glucose in range", "Have regular kidney checks"]
+          },
+          "Insulin Resistance": {
+            "desc":"Tissues don't respond well to insulin, requiring higher insulin to control glucose.",
+            "tips":["Weight loss, resistance training and better sleep reduce resistance", "Medications like metformin may help"]
+          }
+        };
 
-    # Move help text outside diagram
-    st.markdown("👉 **Click a node in the diagram below to learn more.**")
+        // create svg
+        const svg = d3.select("#chart")
+                      .append("svg")
+                      .attr("width", "100%")
+                      .attr("height", height)
+                      .attr("viewBox", `0 0 ${Math.max(width,800)} ${height}`);
 
-    # Show the interactive diagram
-    HtmlFile = open("diabetes_network.html", "r", encoding="utf-8")
-    components.html(HtmlFile.read(), height=650)
+        // add defs for arrowheads
+        svg.append('defs').append('marker')
+            .attr('id','arrow')
+            .attr('viewBox','-0 -5 10 10')
+            .attr('refX',30)
+            .attr('refY',0)
+            .attr('orient','auto')
+            .attr('markerWidth',6)
+            .attr('markerHeight',6)
+          .append('path')
+            .attr('d','M 0,-5 L 10,0 L 0,5')
+            .attr('fill','#888');
+
+        // group for zoom/pan
+        const gMain = svg.append("g");
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(150).strength(1))
+            .force("charge", d3.forceManyBody().strength(-700))
+            .force("center", d3.forceCenter((Math.max(width,800)-360)/2, height/2)) // leave room for info panel
+            .force("collision", d3.forceCollide().radius(50));
+
+        // draw links
+        const link = gMain.append("g")
+            .attr("stroke", "#9aa7b2")
+            .selectAll("path")
+            .data(links)
+            .enter()
+            .append("path")
+            .attr("stroke-width", 2)
+            .attr("fill", "none")
+            .attr("marker-end","url(#arrow)");
+
+        // draw nodes
+        const nodeG = gMain.append("g")
+            .selectAll("g")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class","node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        nodeG.append("circle")
+             .attr("r", 32)
+             .attr("fill", (d,i) => d3.interpolateCool(i / nodes.length))
+             .attr("stroke", "#fff")
+             .attr("stroke-width", 2)
+             .attr("opacity", 0.98)
+             .on("click", (event, d) => { showInfo(d.id); });
+
+        // emoji + label using tspans
+        nodeG.append("text")
+            .attr("text-anchor","middle")
+            .style("font-family","inherit")
+            .each(function(d) {
+                const t = d3.select(this);
+                t.append("tspan")
+                  .attr("x", 0).attr("dy", "-6")
+                  .style("font-size", "20px").text(d.emoji || "");
+                t.append("tspan")
+                  .attr("x", 0).attr("dy", "18")
+                  .style("font-size", "12px").text(d.label || d.id);
+            });
+
+        simulation.on("tick", () => {
+          link.attr("d", function(d) {
+            return "M" + d.source.x + "," + d.source.y + " L " + d.target.x + "," + d.target.y;
+          });
+          nodeG.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        // zoom/pan behavior
+        svg.call(d3.zoom().scaleExtent([0.5, 2]).on("zoom", (event) => {
+          gMain.attr("transform", event.transform);
+        }));
+
+        function dragstarted(event, d) {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+          d.fx = event.x;
+          d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+          if (!event.active) simulation.alphaTarget(0);
+          // keep nodes fixed after drag for convenience
+          d.fx = d.x;
+          d.fy = d.y;
+        }
+
+        function showInfo(nodeId){
+          const obj = explanations[nodeId];
+          const desc = document.getElementById("desc");
+          const tips = document.getElementById("tips");
+          if(!obj){ desc.innerHTML = "No info available."; tips.innerHTML = ""; return; }
+          desc.innerHTML = "<strong>" + nodeId + "</strong><p style='margin-top:6px;'>" + obj.desc + "</p>";
+          tips.innerHTML = "<strong>Practical tips:</strong><ul>" + obj.tips.map(t => "<li>" + t + "</li>").join("") + "</ul>";
+        }
+
+        // initial selection
+        showInfo("Blood Glucose");
+      </script>
+    </body>
+    </html>
+    """
+
+    # embed the improved D3 diagram (non-blocking info panel on the right)
+    st.components.v1.html(d3_html, height=680, scrolling=True)
