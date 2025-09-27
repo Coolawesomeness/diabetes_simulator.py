@@ -488,7 +488,7 @@ elif selected_tab == "📝 Action Plan":
 from pyvis.network import Network
 import streamlit.components.v1 as components
 
-elif selected_tab == "🔬 Diabetes Education(Interactive)":
+elif selected_tab == "🔬 Diabetes Education(Interactive) ":
     st.title("🔬 How Diabetes Works — Interactive Diagram")
     st.markdown("""
     Click any node to see an explanation and practical tips.  
