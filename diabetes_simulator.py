@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from random import uniform
 from datetime import datetime, timedelta
 from streamlit.components.v1 import html as st_html
-from pyvis.network import Network
-import streamlit.components.v1 as components
+
 
 # Optional helper for auto-refresh used by timer. If not installed, the app still runs.
 try:
@@ -486,9 +485,10 @@ elif selected_tab == "📝 Action Plan":
                 st.success(f"✅ {et['exercise']} complete! Great job 🎉")
                 st.session_state.exercise_timer = None
 
+from pyvis.network import Network
+import streamlit.components.v1 as components
 
-
-    elif selected_tab == "🔬 How Diabetes Works (Interactive)":
+elif selected_tab == "🔬 How Diabetes Works (Interactive)":
     st.title("🔬 How Diabetes Works — Interactive Diagram (Improved)")
     st.markdown("""
     Click any node to see an explanation and practical tips.  
