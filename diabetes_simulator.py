@@ -488,7 +488,7 @@ elif selected_tab == "📝 Action Plan":
 
 
 
-elif selected_tab == "🔬 How Diabetes Works (Interactive)":
+    elif selected_tab == "🔬 How Diabetes Works (Interactive)":
     st.title("🔬 How Diabetes Works — Interactive Diagram (Improved)")
     st.markdown("""
     Click any node to see an explanation and practical tips.  
