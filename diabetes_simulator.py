@@ -1,11 +1,11 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from random import uniform
 from datetime import datetime, timedelta
-from streamlit.components.v1 import html as st_html
-
+import streamlit.components.v1 as components
 
 # Optional helper for auto-refresh used by timer. If not installed, the app still runs.
 try:
@@ -29,7 +29,13 @@ if "exercise_timer" not in st.session_state:
     st.session_state.exercise_timer = None
 
 # ------------------ SIDEBAR NAVIGATION ------------------ #
-TABS = ["🏠 Home", "📊 CGM Simulation", "📂 CGM Upload", "📝 Action Plan", "🔬 Diabetes Education(Interactive)"]
+TABS = [
+    "🏠 Home",
+    "📊 CGM Simulation",
+    "📂 CGM Upload",
+    "📝 Action Plan",
+    "🔬 How Diabetes Works (Interactive)"
+]
 selected_tab = st.sidebar.radio("Navigate", TABS)
 
 # ===================== TAB: HOME ===================== #
@@ -53,7 +59,7 @@ if selected_tab == "🏠 Home":
 
     st.divider()
 
-    # ---------- Diagnosis & Meds (FULL block restored) ----------
+    # ---------- Diagnosis & Meds (FULL block) ----------
     st.header("🩺 Diagnosis & Medications")
     diagnosis = st.radio("Select Glucose Status:", ["Non-diabetic", "Pre-diabetic", "Diabetic"])
 
@@ -264,8 +270,7 @@ if selected_tab == "🏠 Home":
         adjusted_glucose = base_glucose - (med_effect * 15) - (exercise * 0.2) + (weight * 0.05)
         adjusted_glucose *= diet_factor
 
-        # insulin correction if user entered current_bg/target earlier (optional)
-        # generate week
+        # generate a week
         avg_glucose = adjusted_glucose
         glucose_levels = [avg_glucose + uniform(-10, 10) for _ in range(7)]
         estimated_hba1c = round((sum(glucose_levels) / 7 + 46.7) / 28.7, 2)
@@ -485,18 +490,15 @@ elif selected_tab == "📝 Action Plan":
                 st.success(f"✅ {et['exercise']} complete! Great job 🎉")
                 st.session_state.exercise_timer = None
 
-
-
-elif selected_tab == "🔬 Diabetes Education(Interactive)":
-    from pyvis.network import Network
-    import streamlit.components.v1 as components
+# ===================== TAB: HOW DIABETES WORKS (D3) ===================== #
+elif selected_tab == "🔬 How Diabetes Works (Interactive)":
     st.title("🔬 How Diabetes Works — Interactive Diagram")
     st.markdown("""
     Click any node to see an explanation and practical tips.  
     Use mouse drag to move nodes, scroll to zoom, and click to get details on the right panel.
     """)
 
-    d3_html = """
+    d3_html = r"""
     <!doctype html>
     <html>
     <head>
@@ -527,9 +529,8 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
 
       <script src="https://d3js.org/d3.v7.min.js"></script>
       <script>
-        // width/height for svg (chart div defines size)
         const container = document.getElementById('chart');
-        const width = container.clientWidth || 800;
+        const width = container.clientWidth || 900;
         const height = 640;
 
         const nodes = [
@@ -557,7 +558,6 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
           {source:"Insulin Resistance", target:"Pancreas"}
         ];
 
-        // explanations
         const explanations = {
           "Food": {
             "desc":"Foods that contain carbohydrates are broken down into glucose during digestion, increasing blood sugar.",
@@ -597,14 +597,12 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
           }
         };
 
-        // create svg
         const svg = d3.select("#chart")
                       .append("svg")
                       .attr("width", "100%")
                       .attr("height", height)
                       .attr("viewBox", `0 0 ${Math.max(width,800)} ${height}`);
 
-        // add defs for arrowheads
         svg.append('defs').append('marker')
             .attr('id','arrow')
             .attr('viewBox','-0 -5 10 10')
@@ -617,16 +615,14 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
             .attr('d','M 0,-5 L 10,0 L 0,5')
             .attr('fill','#888');
 
-        // group for zoom/pan
         const gMain = svg.append("g");
 
         const simulation = d3.forceSimulation(nodes)
             .force("link", d3.forceLink(links).id(d => d.id).distance(150).strength(1))
             .force("charge", d3.forceManyBody().strength(-700))
-            .force("center", d3.forceCenter((Math.max(width,800)-360)/2, height/2)) // leave room for info panel
+            .force("center", d3.forceCenter((Math.max(width,800)-360)/2, height/2))
             .force("collision", d3.forceCollide().radius(50));
 
-        // draw links
         const link = gMain.append("g")
             .attr("stroke", "#9aa7b2")
             .selectAll("path")
@@ -637,7 +633,6 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
             .attr("fill", "none")
             .attr("marker-end","url(#arrow)");
 
-        // draw nodes
         const nodeG = gMain.append("g")
             .selectAll("g")
             .data(nodes)
@@ -657,7 +652,6 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
              .attr("opacity", 0.98)
              .on("click", (event, d) => { showInfo(d.id); });
 
-        // emoji + label using tspans
         nodeG.append("text")
             .attr("text-anchor","middle")
             .style("font-family","inherit")
@@ -678,7 +672,6 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
           nodeG.attr("transform", d => `translate(${d.x},${d.y})`);
         });
 
-        // zoom/pan behavior
         svg.call(d3.zoom().scaleExtent([0.5, 2]).on("zoom", (event) => {
           gMain.attr("transform", event.transform);
         }));
@@ -696,7 +689,6 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
 
         function dragended(event, d) {
           if (!event.active) simulation.alphaTarget(0);
-          // keep nodes fixed after drag for convenience
           d.fx = d.x;
           d.fy = d.y;
         }
@@ -717,5 +709,4 @@ elif selected_tab == "🔬 Diabetes Education(Interactive)":
     </html>
     """
 
-    # embed the improved D3 diagram (non-blocking info panel on the right)
-    st.components.v1.html(d3_html, height=680, scrolling=True)
+    components.html(d3_html, height=680, scrolling=True)
