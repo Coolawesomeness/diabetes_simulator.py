@@ -290,13 +290,7 @@ if selected_tab == "🏠 Home":
                 - **HbA1c**: <5.7% normal | 5.7–6.4% pre-diabetes | ≥6.5% diabetes
             """)
 
-        st.subheader("📋 Lifestyle Feedback")
-        if exercise < 30:
-            st.warning("Try to exercise at least 30 minutes daily (walking, cycling, resistance training).")
-        if diet_score < 10:
-            st.error("Diet score is low — increase vegetables, reduce sugary snacks & fast food.")
-        if sleep_hours < 7:
-            st.warning("Sleep under 7 hours may worsen glucose control.")
+       
 
         # store sim results
         st.session_state["sim_results"] = {
