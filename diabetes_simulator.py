@@ -372,123 +372,150 @@ elif selected_tab == "📂 CGM Upload":
 elif selected_tab == "📝 Action Plan":
     st.title("📝 Personalized Action Plan")
 
-    # ensure cgm_data exists or warn
     df = st.session_state.cgm_data
     if df is None:
         st.warning("No CGM data available. Run a CGM simulation or upload a CSV to get personalized recommendations.")
     else:
-        # Attempt to extract glucose column
-        glucose_col = None
-        if df.shape[1] >= 2:
-            glucose_col = df.columns[1]
-        else:
-            glucose_col = df.columns[0]
+        glucose_col = df.columns[1] if df.shape[1] >= 2 else df.columns[0]
         glucose_series = pd.to_numeric(df[glucose_col], errors='coerce').dropna()
 
         avg_glucose = glucose_series.mean()
-        time_in_range = np.mean((glucose_series>=70) & (glucose_series<=180)) * 100
+        time_in_range = np.mean((glucose_series >= 70) & (glucose_series <= 180)) * 100
         hypo = np.mean(glucose_series < 70) * 100
         hyper = np.mean(glucose_series > 180) * 100
-        est_hba1c = round((avg_glucose + 46.7)/28.7, 2)
+        est_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
 
-        # show metrics
+        # Display summary metrics
         col1, col2, col3 = st.columns(3)
         col1.metric("Average Glucose", f"{avg_glucose:.1f} mg/dL")
         col2.metric("Estimated HbA1c", f"{est_hba1c}%")
-        col3.metric("Time in Range (70-180)", f"{time_in_range:.1f}%")
+        col3.metric("Time in Range", f"{time_in_range:.1f}%")
 
-        st.markdown("----")
-        st.subheader("📋 Recommendations (based on CGM + Intake)")
+        st.markdown("---")
+        st.subheader("📋 Recommendations Based on Data")
 
         if avg_glucose > 150:
-            st.error("High average glucose — review carbohydrate intake, meal timing, and medication adherence.")
+            st.error("High average glucose — review carb intake, exercise, and medications.")
         elif avg_glucose < 80:
-            st.warning("Low average glucose — risk of hypoglycemia. Check insulin/medications and snack strategy.")
+            st.warning("Low glucose — risk of hypoglycemia. Discuss adjusting insulin or carb intake.")
         else:
-            st.success("Average glucose is in a reasonable range.")
+            st.success("✅ Average glucose is within a reasonable range.")
 
         if time_in_range < 70:
-            st.warning("Time in range <70% — aim for better consistency in meals & activity.")
+            st.warning("Aim for >70% time in range by balancing meals and consistent exercise.")
         if hypo > 5:
-            st.error("Frequent hypoglycemia — discuss adjusting medication timing or doses with your provider.")
+            st.error("Frequent hypoglycemia detected — consider adjusting medication timing.")
         if hyper > 30:
-            st.error("Frequent hyperglycemia — consider carb reduction and stepping up activity after meals.")
+            st.error("Frequent hyperglycemia — reduce refined carbs and try post-meal walks.")
 
-        # use intake data if available
         if "diet_score" in st.session_state and st.session_state["diet_score"] < 10:
-            st.warning("Diet quality is low — increase vegetables, reduce sugary snacks & fast food.")
+            st.warning("Low diet quality — add more vegetables and fiber-rich foods.")
         if "exercise" in st.session_state and st.session_state["exercise"] < 30:
-            st.warning("Daily exercise low — increasing to ≥30 min/day helps glucose.")
+            st.warning("Increase daily exercise to at least 30 minutes for better glucose control.")
 
         st.markdown("---")
 
-        # ---------- Meal Logger ----------
-        st.header("🍽️ Meal Logger & Daily Calories")
+        # ---------------- MEAL LOGGER & CALORIE CHECKER ---------------- #
+        st.header("🍽️ Smart Meal Logger & Calorie Estimator")
+
+        common_foods = {
+            "apple": 95, "banana": 105, "rice": 200, "chicken breast": 165,
+            "salad": 150, "burger": 500, "pizza slice": 285, "pasta": 350,
+            "egg": 70, "sandwich": 300, "oatmeal": 150, "fish": 180, "soup": 120
+        }
+
         with st.form("meal_form", clear_on_submit=True):
-            meal_name = st.text_input("Meal description (e.g., 'Chicken salad, 1 bowl')")
-            meal_cal = st.number_input("Estimated calories", min_value=0, step=10)
+            meal_name = st.text_input("Describe your meal (e.g., 'grilled chicken and rice')")
+            guessed_cal = 0
+            for food, cal in common_foods.items():
+                if food in meal_name.lower():
+                    guessed_cal += cal
+            if guessed_cal:
+                st.info(f"Estimated calories for this meal: ~{guessed_cal} kcal (auto-estimated)")
+            meal_cal = st.number_input("Calories (you can adjust manually)", value=guessed_cal, step=10)
             add_meal = st.form_submit_button("➕ Add meal")
             if add_meal:
                 if not meal_name:
-                    st.warning("Please describe the meal (helps with feedback).")
+                    st.warning("Please describe your meal.")
                 else:
-                    st.session_state.meals.append({"meal": meal_name, "calories": meal_cal, "time": datetime.now().strftime("%H:%M")})
+                    st.session_state.meals.append({
+                        "meal": meal_name,
+                        "calories": meal_cal,
+                        "time": datetime.now().strftime("%H:%M")
+                    })
 
         if st.session_state.meals:
             df_meals = pd.DataFrame(st.session_state.meals)
             st.table(df_meals)
             total_cal = df_meals["calories"].sum()
-            st.metric("Total calories logged today", f"{total_cal} kcal")
-            daily_target = st.session_state.get("daily_calories", None)
-            if daily_target:
-                if total_cal < daily_target * 0.9:
-                    st.success(f"✅ {total_cal} / {daily_target} kcal — under target")
-                elif total_cal <= daily_target * 1.1:
-                    st.info(f"⚖️ {total_cal} / {daily_target} kcal — on target")
-                else:
-                    st.error(f"⚠️ {total_cal} / {daily_target} kcal — over target")
+            st.metric("Total Calories Today", f"{total_cal} kcal")
+
+            daily_target = st.session_state.get("daily_calories", 2000)
+            if total_cal < daily_target * 0.9:
+                st.success(f"✅ {total_cal}/{daily_target} kcal — below daily target")
+            elif total_cal <= daily_target * 1.1:
+                st.info(f"⚖️ {total_cal}/{daily_target} kcal — on target")
+            else:
+                st.error(f"⚠️ {total_cal}/{daily_target} kcal — above target")
 
         st.markdown("---")
 
-        # ---------- Exercise Recommender & Timer ----------
-        st.header("🏃 Exercise Recommendations & Timer")
+        # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
+        st.header("🏃 Personalized Exercise Recommender & Timer")
+
         recommended_exercises = {
-            "🚶 Brisk walk": 20,
-            "🚴 Cycling (moderate)": 15,
-            "🏋️ Resistance (bodyweight)": 20,
-            "🧘 Light Yoga/Stretch": 15,
-            "🕺 Dance (fun cardio)": 15
+            "🚶 Brisk Walk": 20,
+            "🚴 Cycling (Moderate)": 15,
+            "🏋️ Resistance Training": 20,
+            "🧘 Yoga or Stretching": 15,
+            "🕺 Dance (Cardio)": 15
         }
 
-        st.write("Choose an exercise and press Start. Timer runs in the background (auto-updates every 60s if `streamlit-autorefresh` is installed).")
-        cols = st.columns([3,1])
-        with cols[0]:
-            ex_choice = st.selectbox("Pick exercise", list(recommended_exercises.keys()))
-        with cols[1]:
-            if st.button("▶️ Start"):
-                mins = recommended_exercises[ex_choice]
-                end_time = datetime.now() + timedelta(minutes=mins)
-                st.session_state.exercise_timer = {"exercise": ex_choice, "end_time": end_time, "duration": mins}
-                st.success(f"Started {ex_choice} for {mins} minutes")
+        st.markdown("Pick an exercise or quick preset, then press ▶️ **Start Timer**.")
+        col_a, col_b, col_c = st.columns([2, 1, 1])
+        with col_a:
+            ex_choice = st.selectbox("Exercise Type", list(recommended_exercises.keys()))
+        with col_b:
+            preset_time = st.selectbox("Preset Duration (minutes)", [5, 10, 15, 20, 30], index=2)
+        with col_c:
+            if st.button("▶️ Start Timer"):
+                end_time = datetime.now() + timedelta(minutes=preset_time)
+                st.session_state.exercise_timer = {
+                    "exercise": ex_choice,
+                    "end_time": end_time,
+                    "duration": preset_time
+                }
+                st.success(f"Started {ex_choice} for {preset_time} minutes!")
 
-        # Show timer (auto-refresh)
-        if st.session_state.exercise_timer:
+        if "exercise_timer" in st.session_state and st.session_state.exercise_timer:
             et = st.session_state.exercise_timer
-            remaining_sec = int((et["end_time"] - datetime.now()).total_seconds())
-            remaining_min = max(0, remaining_sec // 60)
-            remaining_seconds_exact = max(0, remaining_sec % 60)
-            if remaining_sec > 0:
-                # auto-refresh page every 60s (if package present). Safe fallback if not installed.
-                try:
-                    st_autorefresh(interval=60*1000, key="ex_timer_refresh")
-                except Exception:
-                    pass
+            remaining = int((et["end_time"] - datetime.now()).total_seconds())
+            if remaining > 0:
+                mins = remaining // 60
+                secs = remaining % 60
                 st.subheader(f"⏱️ {et['exercise']}")
-                st.info(f"{remaining_min} min {remaining_seconds_exact} sec remaining")
-                st.caption("This timer updates automatically every minute if `streamlit-autorefresh` is installed; otherwise refresh manually.")
+                st.info(f"Time Remaining: **{mins:02d}:{secs:02d}**")
+                st_autorefresh(interval=1000, key="exercise_timer_refresh")  # updates every second
+
+                if st.button("⏹️ Stop Timer"):
+                    st.session_state.exercise_timer = None
+                    st.warning("Timer stopped manually.")
             else:
                 st.success(f"✅ {et['exercise']} complete! Great job 🎉")
                 st.session_state.exercise_timer = None
+
+        st.markdown("---")
+
+        # ---------------- ADDITIONAL FEEDBACK ---------------- #
+        st.header("💡 Lifestyle Insights")
+        if total_cal > daily_target * 1.1:
+            st.warning("You’ve exceeded your calorie goal. Try adding a short walk or lighter dinner.")
+        elif avg_glucose > 150 and total_cal > daily_target:
+            st.warning("High glucose and high calorie intake detected — review portion sizes and carb quality.")
+        elif avg_glucose < 90 and total_cal < daily_target * 0.8:
+            st.info("Slightly low glucose with low calorie intake — ensure balanced meals with adequate carbs and protein.")
+        else:
+            st.success("Overall balance looks good — keep consistent activity and mindful eating!")
 
 # ===================== TAB: HOW DIABETES WORKS (D3) ===================== #
 elif selected_tab == "🔬 How Diabetes Works (Interactive)":
