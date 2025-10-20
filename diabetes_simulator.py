@@ -412,22 +412,122 @@ elif selected_tab == "📝 Action Plan":
     # ---------------- MEAL LOGGER & CALORIE CHECKER ---------------- #
     st.header("🍽️ Smart Meal Logger & Calorie Estimator")
 
-    common_foods = {
-        "apple": 95, "banana": 105, "rice": 200, "chicken breast": 165,
-        "salad": 150, "burger": 500, "pizza": 285, "pasta": 350,
-        "egg": 70, "sandwich": 300, "oatmeal": 150, "fish": 180, "soup": 120
+   # ---------------- SMART MEAL CALORIE ESTIMATOR + NUTRITION ADVISOR ---------------- #
+st.header("🍽️ Smart Meal Logger & Nutrition Advisor")
+
+if "meals" not in st.session_state:
+    st.session_state.meals = []
+
+# Expanded food database (per serving average kcal + nutrient category)
+food_data = {
+    "apple": {"cal": 95, "type": "carb"},
+    "banana": {"cal": 105, "type": "carb"},
+    "egg": {"cal": 70, "type": "protein"},
+    "toast": {"cal": 75, "type": "carb"},
+    "bread": {"cal": 80, "type": "carb"},
+    "rice": {"cal": 200, "type": "carb"},
+    "chicken": {"cal": 165, "type": "protein"},
+    "chicken breast": {"cal": 165, "type": "protein"},
+    "fish": {"cal": 180, "type": "protein"},
+    "salmon": {"cal": 250, "type": "protein"},
+    "steak": {"cal": 250, "type": "protein"},
+    "beef": {"cal": 250, "type": "protein"},
+    "pasta": {"cal": 350, "type": "carb"},
+    "pizza": {"cal": 285, "type": "carb"},
+    "burger": {"cal": 500, "type": "fat"},
+    "fries": {"cal": 365, "type": "fat"},
+    "salad": {"cal": 150, "type": "fiber"},
+    "sandwich": {"cal": 300, "type": "mixed"},
+    "oatmeal": {"cal": 150, "type": "carb"},
+    "yogurt": {"cal": 100, "type": "protein"},
+    "milk": {"cal": 120, "type": "protein"},
+    "cheese": {"cal": 110, "type": "fat"},
+    "nuts": {"cal": 160, "type": "fat"},
+    "vegetables": {"cal": 50, "type": "fiber"},
+    "fruit": {"cal": 60, "type": "carb"},
+    "soup": {"cal": 120, "type": "mixed"},
+    "beans": {"cal": 200, "type": "protein"},
+    "lentils": {"cal": 180, "type": "protein"},
+    "taco": {"cal": 200, "type": "fat"},
+    "burrito": {"cal": 400, "type": "fat"}
+}
+
+def estimate_calories_from_text(meal_text: str):
+    import re
+    text = meal_text.lower()
+    total = 0
+    found_items = []
+    macro_types = {"protein": 0, "carb": 0, "fat": 0, "fiber": 0, "mixed": 0}
+
+    for food, info in food_data.items():
+        match = re.search(rf'(\d+)\s*{food}', text)
+        if match:
+            qty = int(match.group(1))
+            total += qty * info["cal"]
+            macro_types[info["type"]] += qty
+            found_items.append(f"{qty}×{food}")
+        elif food in text:
+            total += info["cal"]
+            macro_types[info["type"]] += 1
+            found_items.append(food)
+
+    if total == 0:
+        total = 400
+        found_items.append("general meal estimate")
+        macro_types["mixed"] += 1
+
+    return total, found_items, macro_types
+
+
+def get_nutrition_advice(macro_types):
+    """Return friendly advice based on meal composition"""
+    total = sum(macro_types.values())
+    if total == 0:
+        return "🤔 Please describe your meal to get advice."
+
+    dominant = max(macro_types, key=macro_types.get)
+
+    advice_dict = {
+        "protein": "🍗 Great protein choice! Consider adding vegetables or fiber for balance.",
+        "carb": "🍞 This meal is carb-heavy. Try adding protein or healthy fats to slow glucose spikes.",
+        "fat": "🥑 High in fats — add some lean protein or fiber for better balance.",
+        "fiber": "🥦 Excellent fiber content! This helps stabilize glucose after meals.",
+        "mixed": "🥗 Balanced meal — nice job keeping a mix of food types!"
     }
 
-    if "meals" not in st.session_state:
-        st.session_state.meals = []
+    return advice_dict.get(dominant, "👌 Looks good! Keep your portions moderate.")
 
-    with st.form("meal_form", clear_on_submit=True):
-        meal_name = st.text_input("Describe your meal (e.g., 'grilled chicken and rice')")
-        guessed_cal = sum(cal for food, cal in common_foods.items() if food in meal_name.lower())
-        if guessed_cal:
-            st.info(f"Estimated calories: ~{guessed_cal} kcal (auto-estimated)")
-        meal_cal = st.number_input("Calories (adjust if needed)", value=guessed_cal or 0, step=10)
-        add_meal = st.form_submit_button("➕ Add Meal")
+
+with st.form("meal_form", clear_on_submit=True):
+    meal_name = st.text_input("Describe your meal (e.g., '2 eggs and toast')")
+    guessed_cal, found_items, macros = estimate_calories_from_text(meal_name) if meal_name else (0, [], {})
+    
+    if guessed_cal and meal_name:
+        st.info(f"Estimated: ~{guessed_cal} kcal ({', '.join(found_items)})")
+
+    meal_cal = st.number_input("Calories (adjust if needed)", value=guessed_cal or 0, step=10)
+    add_meal = st.form_submit_button("➕ Add Meal")
+
+    if add_meal:
+        if not meal_name:
+            st.warning("Please describe your meal.")
+        else:
+            advice = get_nutrition_advice(macros)
+            st.session_state.meals.append({
+                "meal": meal_name,
+                "calories": meal_cal,
+                "advice": advice,
+                "time": datetime.now().strftime("%H:%M")
+            })
+            st.success("Meal added successfully ✅")
+            st.info(advice)
+
+
+# Display logged meals
+if st.session_state.meals:
+    st.subheader("📋 Logged Meals")
+    for m in st.session_state.meals:
+        st.write(f"🍴 **{m['meal']}** — {m['calories']} kcal  \n🕒 {m['time']}  \n💬 {m['advice']}")
 
         if add_meal:
             if not meal_name:
