@@ -16,7 +16,7 @@ except Exception:
         return None
 
 # ------------------ PAGE CONFIG ------------------ #
-st.set_page_config(page_title="Diabetes Digital Twin", layout="wide")
+st.set_page_config(page_title="Digital Diabetes Simulator", layout="wide")
 
 # ------------------ SESSION STATE INIT ------------------ #
 if "cgm_data" not in st.session_state:
