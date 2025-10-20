@@ -368,7 +368,7 @@ elif selected_tab == "📝 Action Plan":
 
     # Try to load glucose/simulation data if available
     df = st.session_state.cgm_data
-    has_simulation = df is not None and df.shape[0] > 0
+    has_simulation = df is not None and isinstance(df, pd.DataFrame) and not df.empty
 
     # ---------------- SIMULATION METRICS ---------------- #
     if has_simulation:
@@ -457,100 +457,98 @@ elif selected_tab == "📝 Action Plan":
 
     st.markdown("---")
 
-   # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
-st.header("🏃 Personalized Exercise Recommender & Timer")
+    # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
+    st.header("🏃 Personalized Exercise Recommender & Timer")
 
-if "exercise_timer" not in st.session_state:
-    st.session_state.exercise_timer = None
+    if "exercise_timer" not in st.session_state:
+        st.session_state.exercise_timer = None
 
-# Recommend based on glucose or home data
-base_exercise = st.session_state.get("exercise", 0)
-if has_simulation and avg_glucose > 150:
-    st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
-elif base_exercise < 30:
-    st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
+    # Recommend based on glucose or home data
+    base_exercise = st.session_state.get("exercise", 0)
+    if has_simulation and avg_glucose and avg_glucose > 150:
+        st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
+    elif base_exercise < 30:
+        st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
 
-exercises = {
-    "🚶 Brisk Walk": 20,
-    "🚴 Cycling": 15,
-    "🏋️ Strength Training": 20,
-    "🧘 Yoga or Stretching": 15,
-    "🏊 Swimming": 20
-}
-
-col_a, col_b = st.columns([2, 1])
-with col_a:
-    ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
-with col_b:
-    preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
-
-if st.button("▶️ Start Timer"):
-    st.session_state.exercise_timer = {
-        "exercise": ex_choice,
-        "duration": preset_time,
-        "running": True
+    exercises = {
+        "🚶 Brisk Walk": 20,
+        "🚴 Cycling": 15,
+        "🏋️ Strength Training": 20,
+        "🧘 Yoga or Stretching": 15,
+        "🏊 Swimming": 20
     }
 
-if st.session_state.exercise_timer:
-    et = st.session_state.exercise_timer
-    st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
+    with col_b:
+        preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
 
-    import streamlit.components.v1 as components
+    if st.button("▶️ Start Timer"):
+        st.session_state.exercise_timer = {
+            "exercise": ex_choice,
+            "duration": preset_time,
+            "running": True
+        }
 
-    timer_html = f"""
-    <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
-    <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
-    <button id="resumeBtn">▶️ Resume</button>
-    <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
+    if st.session_state.exercise_timer:
+        et = st.session_state.exercise_timer
+        st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
 
-    <script>
-    let totalSeconds = {et['duration']} * 60;
-    let remaining = totalSeconds;
-    let timerInterval;
-    let isRunning = true;
+        timer_html = f"""
+        <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
+        <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
+        <button id="resumeBtn">▶️ Resume</button>
+        <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
 
-    const timerEl = document.getElementById('timer');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const resumeBtn = document.getElementById('resumeBtn');
-    const stopBtn = document.getElementById('stopBtn');
+        <script>
+        let totalSeconds = {et['duration']} * 60;
+        let remaining = totalSeconds;
+        let timerInterval;
+        let isRunning = true;
 
-    function updateTimer() {{
-        let mins = Math.floor(remaining / 60);
-        let secs = remaining % 60;
-        timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
-    }}
+        const timerEl = document.getElementById('timer');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
 
-    function startTimer() {{
-        timerInterval = setInterval(() => {{
-            if (isRunning && remaining > 0) {{
-                remaining--;
-                updateTimer();
-            }}
-            if (remaining <= 0) {{
-                clearInterval(timerInterval);
-                timerEl.textContent = "✅ Complete!";
-            }}
-        }}, 1000);
-    }}
+        function updateTimer() {{
+            let mins = Math.floor(remaining / 60);
+            let secs = remaining % 60;
+            timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+        }}
 
-    pauseBtn.addEventListener('click', () => {{
-        isRunning = false;
-    }});
-    resumeBtn.addEventListener('click', () => {{
-        isRunning = true;
-    }});
-    stopBtn.addEventListener('click', () => {{
-        remaining = totalSeconds;
+        function startTimer() {{
+            timerInterval = setInterval(() => {{
+                if (isRunning && remaining > 0) {{
+                    remaining--;
+                    updateTimer();
+                }}
+                if (remaining <= 0) {{
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "✅ Complete!";
+                }}
+            }}, 1000);
+        }}
+
+        pauseBtn.addEventListener('click', () => {{
+            isRunning = false;
+        }});
+        resumeBtn.addEventListener('click', () => {{
+            isRunning = true;
+        }});
+        stopBtn.addEventListener('click', () => {{
+            remaining = totalSeconds;
+            updateTimer();
+            isRunning = false;
+            clearInterval(timerInterval);
+        }});
+
         updateTimer();
-        isRunning = false;
-        clearInterval(timerInterval);
-    }});
-
-    updateTimer();
-    startTimer();
-    </script>
-    """
-    components.html(timer_html, height=180)
+        startTimer();
+        </script>
+        """
+        components.html(timer_html, height=180)
 
     # ---------------- LIFESTYLE INSIGHTS ---------------- #
     st.header("💡 Lifestyle Insights")
