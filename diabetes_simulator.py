@@ -410,14 +410,14 @@ elif selected_tab == "📝 Action Plan":
     st.markdown("---")
    
 
-   # ---------------- SMART MEAL CALORIE ESTIMATOR + NUTRITION ADVISOR ---------------- #
-    st.header("🍽️ Smart Meal Logger & Nutrition Advisor")
+  # ---------------- SMART MEAL CALORIE ESTIMATOR + PERSONALIZED NUTRITION ADVISOR ---------------- #
+st.header("🍽️ Smart Meal Logger & Personalized Nutrition Advisor")
 
-    if "meals" not in st.session_state:
-        st.session_state.meals = []
+if "meals" not in st.session_state:
+    st.session_state.meals = []
 
-    # Expanded food database (per serving average kcal + nutrient category)
-    food_data = {
+# Expanded food database (per serving average kcal + nutrient category)
+food_data = {
     "apple": {"cal": 95, "type": "carb"},
     "banana": {"cal": 105, "type": "carb"},
     "egg": {"cal": 70, "type": "protein"},
@@ -431,7 +431,7 @@ elif selected_tab == "📝 Action Plan":
     "steak": {"cal": 250, "type": "protein"},
     "beef": {"cal": 250, "type": "protein"},
     "pasta": {"cal": 350, "type": "carb"},
-    "pizza": {"cal": 285, "type": "carb"},
+    "pizza": {"cal": 285, "type": "fat"},
     "burger": {"cal": 500, "type": "fat"},
     "fries": {"cal": 365, "type": "fat"},
     "salad": {"cal": 150, "type": "fiber"},
@@ -447,7 +447,10 @@ elif selected_tab == "📝 Action Plan":
     "beans": {"cal": 200, "type": "protein"},
     "lentils": {"cal": 180, "type": "protein"},
     "taco": {"cal": 200, "type": "fat"},
-    "burrito": {"cal": 400, "type": "fat"}
+    "burrito": {"cal": 400, "type": "fat"},
+    "soda": {"cal": 150, "type": "carb"},
+    "juice": {"cal": 120, "type": "carb"},
+    "dessert": {"cal": 300, "type": "fat"}
 }
 
 def estimate_calories_from_text(meal_text: str):
@@ -477,29 +480,70 @@ def estimate_calories_from_text(meal_text: str):
     return total, found_items, macro_types
 
 
-    def get_nutrition_advice(macro_types):
-    """Return friendly advice based on meal composition"""
+def infer_diagnosis_from_meals(meals):
+    """Infer likely glucose status if user skipped Home tab."""
+    if not meals:
+        return "Non-diabetic"
+
+    carb_dominant = 0
+    high_cal = 0
+    for m in meals:
+        if "carb" in m.get("macro_dominant", ""):
+            carb_dominant += 1
+        if m["calories"] > 600:
+            high_cal += 1
+
+    if high_cal >= 3 or carb_dominant >= 3:
+        return "Diabetic"
+    elif high_cal >= 2 or carb_dominant >= 2:
+        return "Pre-diabetic"
+    else:
+        return "Non-diabetic"
+
+
+def get_nutrition_advice(macro_types, diagnosis):
+    """Return personalized feedback based on meal composition & diagnosis."""
     total = sum(macro_types.values())
     if total == 0:
         return "🤔 Please describe your meal to get advice."
 
     dominant = max(macro_types, key=macro_types.get)
 
-    advice_dict = {
-        "protein": "🍗 Great protein choice! Consider adding vegetables or fiber for balance.",
-        "carb": "🍞 This meal is carb-heavy. Try adding protein or healthy fats to slow glucose spikes.",
-        "fat": "🥑 High in fats — add some lean protein or fiber for better balance.",
-        "fiber": "🥦 Excellent fiber content! This helps stabilize glucose after meals.",
-        "mixed": "🥗 Balanced meal — nice job keeping a mix of food types!"
+    # General base messages
+    base_advice = {
+        "protein": "🍗 Great protein choice! Helps with glucose stability.",
+        "carb": "🍞 Carb-heavy meal — pair with protein or fiber to slow absorption.",
+        "fat": "🥑 High-fat meal — balance it with fiber or lean protein next time.",
+        "fiber": "🥦 Excellent fiber intake! Helps improve insulin sensitivity.",
+        "mixed": "🥗 Balanced meal! Nice mix of nutrients."
     }
 
-    return advice_dict.get(dominant, "👌 Looks good! Keep your portions moderate.")
+    msg = base_advice.get(dominant, "👌 Looks balanced overall.")
 
+    # Diagnosis-based modifiers
+    if diagnosis == "Diabetic":
+        if dominant == "carb":
+            msg += " ⚠️ Try to limit high-carb foods to smaller portions and favor complex carbs."
+        elif dominant == "fat":
+            msg += " Watch out for saturated fats; prefer lean proteins or unsaturated sources."
+        else:
+            msg += " Keep checking your glucose response to this meal."
+    elif diagnosis == "Pre-diabetic":
+        msg += " 🧠 Good to be mindful of carbs — moderate portions and stay active after meals."
+    else:
+        msg += " ✅ Keep up the balance for healthy glucose control."
+
+    return msg, dominant
+
+
+# --- Determine user diagnosis context ---
+diagnosis = st.session_state.get("diagnosis", None)
 
 with st.form("meal_form", clear_on_submit=True):
     meal_name = st.text_input("Describe your meal (e.g., '2 eggs and toast')")
     guessed_cal, found_items, macros = estimate_calories_from_text(meal_name) if meal_name else (0, [], {})
-    
+    diagnosis_context = diagnosis or infer_diagnosis_from_meals(st.session_state.meals)
+
     if guessed_cal and meal_name:
         st.info(f"Estimated: ~{guessed_cal} kcal ({', '.join(found_items)})")
 
@@ -510,50 +554,28 @@ with st.form("meal_form", clear_on_submit=True):
         if not meal_name:
             st.warning("Please describe your meal.")
         else:
-            advice = get_nutrition_advice(macros)
+            advice, dominant = get_nutrition_advice(macros, diagnosis_context)
             st.session_state.meals.append({
                 "meal": meal_name,
                 "calories": meal_cal,
                 "advice": advice,
+                "macro_dominant": dominant,
                 "time": datetime.now().strftime("%H:%M")
             })
-            st.success("Meal added successfully ✅")
+            st.success(f"Meal added! Diagnosis context: **{diagnosis_context}**")
             st.info(advice)
 
 
 # Display logged meals
 if st.session_state.meals:
-    st.subheader("📋 Logged Meals")
+    st.subheader("📋 Logged Meals & Advice")
     for m in st.session_state.meals:
-        st.write(f"🍴 **{m['meal']}** — {m['calories']} kcal  \n🕒 {m['time']}  \n💬 {m['advice']}")
+        st.markdown(f"""
+        🍴 **{m['meal']}** — {m['calories']} kcal  
+        🕒 {m['time']}  
+        💬 {m['advice']}
+        """)
 
-        if add_meal:
-            if not meal_name:
-                st.warning("Please describe your meal.")
-            else:
-                st.session_state.meals.append({
-                    "meal": meal_name,
-                    "calories": meal_cal,
-                    "time": datetime.now().strftime("%H:%M")
-                })
-
-        total_cal = 0
-        if st.session_state.meals:
-            df_meals = pd.DataFrame(st.session_state.meals)
-            st.table(df_meals)
-            total_cal = df_meals["calories"].sum()
-    
-        daily_target = st.session_state.get("daily_calories", 2000)
-        if total_cal:
-            st.metric("Total Calories Today", f"{total_cal} kcal")
-            if total_cal < daily_target * 0.9:
-                st.success(f"✅ {total_cal}/{daily_target} kcal — below daily target")
-            elif total_cal <= daily_target * 1.1:
-                st.info(f"⚖️ {total_cal}/{daily_target} kcal — on target")
-            else:
-                st.error(f"⚠️ {total_cal}/{daily_target} kcal — above target")
-    
-        st.markdown("---")
     
         # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
         st.header("🏃 Personalized Exercise Recommender & Timer")
