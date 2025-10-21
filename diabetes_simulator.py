@@ -374,11 +374,11 @@ elif selected_tab == "📋 Action Plan":
     if "exercise_timer" not in st.session_state:
             st.session_state.exercise_timer = None
     
-    # Recommend based on glucose or home data
-     base_exercise = st.session_state.get("exercise", 0)
-     if has_simulation and avg_glucose and avg_glucose > 150:
+        # Recommend based on glucose or home data
+         base_exercise = st.session_state.get("exercise", 0)
+         if has_simulation and avg_glucose and avg_glucose > 150:
             st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
-    elif base_exercise < 30:
+        elif base_exercise < 30:
             st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
     
         exercises = {
