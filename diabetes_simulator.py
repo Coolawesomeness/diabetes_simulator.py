@@ -408,18 +408,16 @@ elif selected_tab == "📝 Action Plan":
         avg_glucose, est_hba1c, time_in_range = None, None, None
 
     st.markdown("---")
-
-    # ---------------- MEAL LOGGER & CALORIE CHECKER ---------------- #
-    st.header("🍽️ Smart Meal Logger & Calorie Estimator")
+   
 
    # ---------------- SMART MEAL CALORIE ESTIMATOR + NUTRITION ADVISOR ---------------- #
-st.header("🍽️ Smart Meal Logger & Nutrition Advisor")
+    st.header("🍽️ Smart Meal Logger & Nutrition Advisor")
 
-if "meals" not in st.session_state:
-    st.session_state.meals = []
+    if "meals" not in st.session_state:
+        st.session_state.meals = []
 
-# Expanded food database (per serving average kcal + nutrient category)
-food_data = {
+    # Expanded food database (per serving average kcal + nutrient category)
+    food_data = {
     "apple": {"cal": 95, "type": "carb"},
     "banana": {"cal": 105, "type": "carb"},
     "egg": {"cal": 70, "type": "protein"},
@@ -452,7 +450,7 @@ food_data = {
     "burrito": {"cal": 400, "type": "fat"}
 }
 
-def estimate_calories_from_text(meal_text: str):
+    def estimate_calories_from_text(meal_text: str):
     import re
     text = meal_text.lower()
     total = 0
@@ -479,7 +477,7 @@ def estimate_calories_from_text(meal_text: str):
     return total, found_items, macro_types
 
 
-def get_nutrition_advice(macro_types):
+    def get_nutrition_advice(macro_types):
     """Return friendly advice based on meal composition"""
     total = sum(macro_types.values())
     if total == 0:
@@ -539,139 +537,139 @@ if st.session_state.meals:
                     "time": datetime.now().strftime("%H:%M")
                 })
 
-    total_cal = 0
-    if st.session_state.meals:
-        df_meals = pd.DataFrame(st.session_state.meals)
-        st.table(df_meals)
-        total_cal = df_meals["calories"].sum()
-
-    daily_target = st.session_state.get("daily_calories", 2000)
-    if total_cal:
-        st.metric("Total Calories Today", f"{total_cal} kcal")
-        if total_cal < daily_target * 0.9:
-            st.success(f"✅ {total_cal}/{daily_target} kcal — below daily target")
-        elif total_cal <= daily_target * 1.1:
-            st.info(f"⚖️ {total_cal}/{daily_target} kcal — on target")
-        else:
-            st.error(f"⚠️ {total_cal}/{daily_target} kcal — above target")
-
-    st.markdown("---")
-
-    # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
-    st.header("🏃 Personalized Exercise Recommender & Timer")
-
-    if "exercise_timer" not in st.session_state:
-        st.session_state.exercise_timer = None
-
-    # Recommend based on glucose or home data
-    base_exercise = st.session_state.get("exercise", 0)
-    if has_simulation and avg_glucose and avg_glucose > 150:
-        st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
-    elif base_exercise < 30:
-        st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
-
-    exercises = {
-        "🚶 Brisk Walk": 20,
-        "🚴 Cycling": 15,
-        "🏋️ Strength Training": 20,
-        "🧘 Yoga or Stretching": 15,
-        "🏊 Swimming": 20
-    }
-
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
-    with col_b:
-        preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
-
-    if st.button("▶️ Start Timer"):
-        st.session_state.exercise_timer = {
-            "exercise": ex_choice,
-            "duration": preset_time,
-            "running": True
+        total_cal = 0
+        if st.session_state.meals:
+            df_meals = pd.DataFrame(st.session_state.meals)
+            st.table(df_meals)
+            total_cal = df_meals["calories"].sum()
+    
+        daily_target = st.session_state.get("daily_calories", 2000)
+        if total_cal:
+            st.metric("Total Calories Today", f"{total_cal} kcal")
+            if total_cal < daily_target * 0.9:
+                st.success(f"✅ {total_cal}/{daily_target} kcal — below daily target")
+            elif total_cal <= daily_target * 1.1:
+                st.info(f"⚖️ {total_cal}/{daily_target} kcal — on target")
+            else:
+                st.error(f"⚠️ {total_cal}/{daily_target} kcal — above target")
+    
+        st.markdown("---")
+    
+        # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
+        st.header("🏃 Personalized Exercise Recommender & Timer")
+    
+        if "exercise_timer" not in st.session_state:
+            st.session_state.exercise_timer = None
+    
+        # Recommend based on glucose or home data
+        base_exercise = st.session_state.get("exercise", 0)
+        if has_simulation and avg_glucose and avg_glucose > 150:
+            st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
+        elif base_exercise < 30:
+            st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
+    
+        exercises = {
+            "🚶 Brisk Walk": 20,
+            "🚴 Cycling": 15,
+            "🏋️ Strength Training": 20,
+            "🧘 Yoga or Stretching": 15,
+            "🏊 Swimming": 20
         }
-
-    if st.session_state.exercise_timer:
-        et = st.session_state.exercise_timer
-        st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
-
-        timer_html = f"""
-        <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
-        <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
-        <button id="resumeBtn">▶️ Resume</button>
-        <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
-
-        <script>
-        let totalSeconds = {et['duration']} * 60;
-        let remaining = totalSeconds;
-        let timerInterval;
-        let isRunning = true;
-
-        const timerEl = document.getElementById('timer');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const resumeBtn = document.getElementById('resumeBtn');
-        const stopBtn = document.getElementById('stopBtn');
-
-        function updateTimer() {{
-            let mins = Math.floor(remaining / 60);
-            let secs = remaining % 60;
-            timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
-        }}
-
-        function startTimer() {{
-            timerInterval = setInterval(() => {{
-                if (isRunning && remaining > 0) {{
-                    remaining--;
-                    updateTimer();
-                }}
-                if (remaining <= 0) {{
-                    clearInterval(timerInterval);
-                    timerEl.textContent = "✅ Complete!";
-                }}
-            }}, 1000);
-        }}
-
-        pauseBtn.addEventListener('click', () => {{
-            isRunning = false;
-        }});
-        resumeBtn.addEventListener('click', () => {{
-            isRunning = true;
-        }});
-        stopBtn.addEventListener('click', () => {{
-            remaining = totalSeconds;
+    
+        col_a, col_b = st.columns([2, 1])
+        with col_a:
+            ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
+        with col_b:
+            preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
+    
+        if st.button("▶️ Start Timer"):
+            st.session_state.exercise_timer = {
+                "exercise": ex_choice,
+                "duration": preset_time,
+                "running": True
+            }
+    
+        if st.session_state.exercise_timer:
+            et = st.session_state.exercise_timer
+            st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
+    
+            timer_html = f"""
+            <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
+            <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
+            <button id="resumeBtn">▶️ Resume</button>
+            <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
+    
+            <script>
+            let totalSeconds = {et['duration']} * 60;
+            let remaining = totalSeconds;
+            let timerInterval;
+            let isRunning = true;
+    
+            const timerEl = document.getElementById('timer');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resumeBtn = document.getElementById('resumeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+    
+            function updateTimer() {{
+                let mins = Math.floor(remaining / 60);
+                let secs = remaining % 60;
+                timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+            }}
+    
+            function startTimer() {{
+                timerInterval = setInterval(() => {{
+                    if (isRunning && remaining > 0) {{
+                        remaining--;
+                        updateTimer();
+                    }}
+                    if (remaining <= 0) {{
+                        clearInterval(timerInterval);
+                        timerEl.textContent = "✅ Complete!";
+                    }}
+                }}, 1000);
+            }}
+    
+            pauseBtn.addEventListener('click', () => {{
+                isRunning = false;
+            }});
+            resumeBtn.addEventListener('click', () => {{
+                isRunning = true;
+            }});
+            stopBtn.addEventListener('click', () => {{
+                remaining = totalSeconds;
+                updateTimer();
+                isRunning = false;
+                clearInterval(timerInterval);
+            }});
+    
             updateTimer();
-            isRunning = false;
-            clearInterval(timerInterval);
-        }});
-
-        updateTimer();
-        startTimer();
-        </script>
-        """
-        components.html(timer_html, height=180)
-
-    # ---------------- LIFESTYLE INSIGHTS ---------------- #
-    st.header("💡 Lifestyle Insights")
-
-    diet_score = st.session_state.get("diet_score", 10)
-    exercise_mins = st.session_state.get("exercise", 0)
-
-    if total_cal and total_cal > daily_target * 1.1:
-        st.warning("You’ve exceeded your calorie goal — try a light walk or reduce snacks.")
-    elif total_cal and total_cal < daily_target * 0.8:
-        st.info("Calorie intake low — make sure to eat balanced meals with carbs and protein.")
-    elif not total_cal:
-        st.info("Log some meals to get personalized nutrition advice.")
-
-    if exercise_mins < 30:
-        st.warning("Increase daily exercise to at least 30 minutes.")
-    else:
-        st.success("Exercise duration meets the daily recommendation!")
-
-    if diet_score < 10:
-        st.warning("Improve diet quality: add more vegetables, fiber, and lean protein.")
-    elif diet_score > 20:
-        st.success("Excellent diet quality — keep it up!")
+            startTimer();
+            </script>
+            """
+            components.html(timer_html, height=180)
+    
+        # ---------------- LIFESTYLE INSIGHTS ---------------- #
+        st.header("💡 Lifestyle Insights")
+    
+        diet_score = st.session_state.get("diet_score", 10)
+        exercise_mins = st.session_state.get("exercise", 0)
+    
+        if total_cal and total_cal > daily_target * 1.1:
+            st.warning("You’ve exceeded your calorie goal — try a light walk or reduce snacks.")
+        elif total_cal and total_cal < daily_target * 0.8:
+            st.info("Calorie intake low — make sure to eat balanced meals with carbs and protein.")
+        elif not total_cal:
+            st.info("Log some meals to get personalized nutrition advice.")
+    
+        if exercise_mins < 30:
+            st.warning("Increase daily exercise to at least 30 minutes.")
+        else:
+            st.success("Exercise duration meets the daily recommendation!")
+    
+        if diet_score < 10:
+            st.warning("Improve diet quality: add more vegetables, fiber, and lean protein.")
+        elif diet_score > 20:
+            st.success("Excellent diet quality — keep it up!")
 
 # ===================== TAB: HOW DIABETES WORKS (D3) ===================== #
 elif selected_tab == "🔬 How Diabetes Works (Interactive)":
