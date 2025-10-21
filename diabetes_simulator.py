@@ -450,7 +450,7 @@ elif selected_tab == "📝 Action Plan":
     "burrito": {"cal": 400, "type": "fat"}
 }
 
-    def estimate_calories_from_text(meal_text: str):
+def estimate_calories_from_text(meal_text: str):
     import re
     text = meal_text.lower()
     total = 0
