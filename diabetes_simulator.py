@@ -369,7 +369,7 @@ elif selected_tab == "📋 Action Plan":
     df = st.session_state.cgm_data
     has_simulation = df is not None and isinstance(df, pd.DataFrame) and not df.empty
     # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
-        st.header("🏃 Personalized Exercise Recommender & Timer")
+    st.header("🏃 Personalized Exercise Recommender & Timer")
     
         if "exercise_timer" not in st.session_state:
             st.session_state.exercise_timer = None
