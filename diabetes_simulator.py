@@ -375,7 +375,7 @@ elif selected_tab == "📋 Action Plan":
             st.session_state.exercise_timer = None
     
         # Recommend based on glucose or home data
-        base_exercise = st.session_state.get("exercise", 0)
+            base_exercise = st.session_state.get("exercise", 0)
          if has_simulation and avg_glucose and avg_glucose > 150:
             st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
         elif base_exercise < 30:
