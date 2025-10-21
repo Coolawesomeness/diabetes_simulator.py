@@ -363,54 +363,131 @@ elif selected_tab == "📂 CGM Upload":
             st.error(f"Could not read CSV: {e}")
 
 # ===================== TAB: ACTION PLAN ===================== #
-elif selected_tab == "📝 Action Plan":
-    st.title("📝 Personalized Action Plan")
-
-    # Try to load glucose/simulation data if available
+elif selected_tab == "📋 Action Plan":
+    st.title("📋 Personalized Action Plan & Recommendations")
+# Try to load glucose/simulation data if available
     df = st.session_state.cgm_data
     has_simulation = df is not None and isinstance(df, pd.DataFrame) and not df.empty
-
-    # ---------------- SIMULATION METRICS ---------------- #
-    if has_simulation:
-        glucose_col = df.columns[1] if df.shape[1] >= 2 else df.columns[0]
-        glucose_series = pd.to_numeric(df[glucose_col], errors="coerce").dropna()
-
-        avg_glucose = glucose_series.mean()
-        time_in_range = np.mean((glucose_series >= 70) & (glucose_series <= 180)) * 100
-        hypo = np.mean(glucose_series < 70) * 100
-        hyper = np.mean(glucose_series > 180) * 100
-        est_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
-
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Average Glucose", f"{avg_glucose:.1f} mg/dL")
-        col2.metric("Estimated HbA1c", f"{est_hba1c}%")
-        col3.metric("Time in Range", f"{time_in_range:.1f}%")
-
-        st.markdown("---")
-
-        st.subheader("📋 Glucose-Based Recommendations")
-
-        if avg_glucose > 150:
-            st.error("High average glucose — review carb intake, exercise, and medications.")
-        elif avg_glucose < 80:
-            st.warning("Low glucose — possible hypoglycemia. Adjust carb intake or medication timing.")
+    # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
+        st.header("🏃 Personalized Exercise Recommender & Timer")
+    
+        if "exercise_timer" not in st.session_state:
+            st.session_state.exercise_timer = None
+    
+        # Recommend based on glucose or home data
+        base_exercise = st.session_state.get("exercise", 0)
+        if has_simulation and avg_glucose and avg_glucose > 150:
+            st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
+        elif base_exercise < 30:
+            st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
+    
+        exercises = {
+            "🚶 Brisk Walk": 20,
+            "🚴 Cycling": 15,
+            "🏋️ Strength Training": 20,
+            "🧘 Yoga or Stretching": 15,
+            "🏊 Swimming": 20
+        }
+    
+        col_a, col_b = st.columns([2, 1])
+        with col_a:
+            ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
+        with col_b:
+            preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
+    
+        if st.button("▶️ Start Timer"):
+            st.session_state.exercise_timer = {
+                "exercise": ex_choice,
+                "duration": preset_time,
+                "running": True
+            }
+    
+        if st.session_state.exercise_timer:
+            et = st.session_state.exercise_timer
+            st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
+    
+            timer_html = f"""
+            <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
+            <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
+            <button id="resumeBtn">▶️ Resume</button>
+            <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
+    
+            <script>
+            let totalSeconds = {et['duration']} * 60;
+            let remaining = totalSeconds;
+            let timerInterval;
+            let isRunning = true;
+    
+            const timerEl = document.getElementById('timer');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resumeBtn = document.getElementById('resumeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+    
+            function updateTimer() {{
+                let mins = Math.floor(remaining / 60);
+                let secs = remaining % 60;
+                timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+            }}
+    
+            function startTimer() {{
+                timerInterval = setInterval(() => {{
+                    if (isRunning && remaining > 0) {{
+                        remaining--;
+                        updateTimer();
+                    }}
+                    if (remaining <= 0) {{
+                        clearInterval(timerInterval);
+                        timerEl.textContent = "✅ Complete!";
+                    }}
+                }}, 1000);
+            }}
+    
+            pauseBtn.addEventListener('click', () => {{
+                isRunning = false;
+            }});
+            resumeBtn.addEventListener('click', () => {{
+                isRunning = true;
+            }});
+            stopBtn.addEventListener('click', () => {{
+                remaining = totalSeconds;
+                updateTimer();
+                isRunning = false;
+                clearInterval(timerInterval);
+            }});
+    
+            updateTimer();
+            startTimer();
+            </script>
+            """
+            components.html(timer_html, height=180)
+    
+        # ---------------- LIFESTYLE INSIGHTS ---------------- #
+        st.header("💡 Lifestyle Insights")
+    
+        diet_score = st.session_state.get("diet_score", 10)
+        exercise_mins = st.session_state.get("exercise", 0)
+    
+        if total_cal and total_cal > daily_target * 1.1:
+            st.warning("You’ve exceeded your calorie goal — try a light walk or reduce snacks.")
+        elif total_cal and total_cal < daily_target * 0.8:
+            st.info("Calorie intake low — make sure to eat balanced meals with carbs and protein.")
+        elif not total_cal:
+            st.info("Log some meals to get personalized nutrition advice.")
+    
+        if exercise_mins < 30:
+            st.warning("Increase daily exercise to at least 30 minutes.")
         else:
-            st.success("✅ Glucose levels are within a healthy range!")
+            st.success("Exercise duration meets the daily recommendation!")
+    
+        if diet_score < 10:
+            st.warning("Improve diet quality: add more vegetables, fiber, and lean protein.")
+        elif diet_score > 20:
+            st.success("Excellent diet quality — keep it up!")
+    # --- EXERCISE TIMER CODE GOES HERE ---
+    # (your timer, workout options, etc.)
 
-        if time_in_range < 70:
-            st.warning("Time in range <70%. Consider reducing sugar or increasing post-meal activity.")
-        if hypo > 5:
-            st.error("Frequent low glucose events — discuss insulin or medication timing with a clinician.")
-        if hyper > 30:
-            st.error("Frequent high glucose — limit refined carbs and add aerobic activity after meals.")
-    else:
-        st.info("ℹ️ No CGM/simulation data detected. Using Home tab data for your plan.")
-        avg_glucose, est_hba1c, time_in_range = None, None, None
-
-    st.markdown("---")
-   
-
-  # ---------------- SMART MEAL CALORIE ESTIMATOR + PERSONALIZED NUTRITION ADVISOR ---------------- #
+    # --- SMART MEAL LOGGER GOES HERE ---
+    st.header("🍽️ Smart Meal Logger & Personalized Nutrition Advisor")
 st.header("🍽️ Smart Meal Logger & Personalized Nutrition Advisor")
 
 if "meals" not in st.session_state:
@@ -575,123 +652,58 @@ if st.session_state.meals:
         🕒 {m['time']}  
         💬 {m['advice']}
         """)
+    # now paste the full Smart Meal Logger & Nutrition Advisor code here
+    # (make sure everything is indented one level under this tab)
+elif selected_tab == "📝 Action Plan":
+    st.title("📝 Personalized Action Plan")
 
     
-        # ---------------- EXERCISE RECOMMENDER & TIMER ---------------- #
-        st.header("🏃 Personalized Exercise Recommender & Timer")
-    
-        if "exercise_timer" not in st.session_state:
-            st.session_state.exercise_timer = None
-    
-        # Recommend based on glucose or home data
-        base_exercise = st.session_state.get("exercise", 0)
-        if has_simulation and avg_glucose and avg_glucose > 150:
-            st.info("Recommendation: Add 15–20 minutes of aerobic activity (e.g., brisk walk).")
-        elif base_exercise < 30:
-            st.info("Increase exercise to at least 30 minutes per day for improved insulin sensitivity.")
-    
-        exercises = {
-            "🚶 Brisk Walk": 20,
-            "🚴 Cycling": 15,
-            "🏋️ Strength Training": 20,
-            "🧘 Yoga or Stretching": 15,
-            "🏊 Swimming": 20
-        }
-    
-        col_a, col_b = st.columns([2, 1])
-        with col_a:
-            ex_choice = st.selectbox("Choose Exercise", list(exercises.keys()))
-        with col_b:
-            preset_time = st.selectbox("Duration (min)", [5, 10, 15, 20, 30], index=2)
-    
-        if st.button("▶️ Start Timer"):
-            st.session_state.exercise_timer = {
-                "exercise": ex_choice,
-                "duration": preset_time,
-                "running": True
-            }
-    
-        if st.session_state.exercise_timer:
-            et = st.session_state.exercise_timer
-            st.subheader(f"⏱️ {et['exercise']} — {et['duration']} min")
-    
-            timer_html = f"""
-            <div id="timer" style="font-size:28px; font-weight:bold; margin:10px;"></div>
-            <button id="pauseBtn" style="margin-right:10px;">⏸️ Pause</button>
-            <button id="resumeBtn">▶️ Resume</button>
-            <button id="stopBtn" style="margin-left:10px;">⏹️ Stop</button>
-    
-            <script>
-            let totalSeconds = {et['duration']} * 60;
-            let remaining = totalSeconds;
-            let timerInterval;
-            let isRunning = true;
-    
-            const timerEl = document.getElementById('timer');
-            const pauseBtn = document.getElementById('pauseBtn');
-            const resumeBtn = document.getElementById('resumeBtn');
-            const stopBtn = document.getElementById('stopBtn');
-    
-            function updateTimer() {{
-                let mins = Math.floor(remaining / 60);
-                let secs = remaining % 60;
-                timerEl.textContent = `${{mins.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
-            }}
-    
-            function startTimer() {{
-                timerInterval = setInterval(() => {{
-                    if (isRunning && remaining > 0) {{
-                        remaining--;
-                        updateTimer();
-                    }}
-                    if (remaining <= 0) {{
-                        clearInterval(timerInterval);
-                        timerEl.textContent = "✅ Complete!";
-                    }}
-                }}, 1000);
-            }}
-    
-            pauseBtn.addEventListener('click', () => {{
-                isRunning = false;
-            }});
-            resumeBtn.addEventListener('click', () => {{
-                isRunning = true;
-            }});
-            stopBtn.addEventListener('click', () => {{
-                remaining = totalSeconds;
-                updateTimer();
-                isRunning = false;
-                clearInterval(timerInterval);
-            }});
-    
-            updateTimer();
-            startTimer();
-            </script>
-            """
-            components.html(timer_html, height=180)
-    
-        # ---------------- LIFESTYLE INSIGHTS ---------------- #
-        st.header("💡 Lifestyle Insights")
-    
-        diet_score = st.session_state.get("diet_score", 10)
-        exercise_mins = st.session_state.get("exercise", 0)
-    
-        if total_cal and total_cal > daily_target * 1.1:
-            st.warning("You’ve exceeded your calorie goal — try a light walk or reduce snacks.")
-        elif total_cal and total_cal < daily_target * 0.8:
-            st.info("Calorie intake low — make sure to eat balanced meals with carbs and protein.")
-        elif not total_cal:
-            st.info("Log some meals to get personalized nutrition advice.")
-    
-        if exercise_mins < 30:
-            st.warning("Increase daily exercise to at least 30 minutes.")
+
+    # ---------------- SIMULATION METRICS ---------------- #
+    if has_simulation:
+        glucose_col = df.columns[1] if df.shape[1] >= 2 else df.columns[0]
+        glucose_series = pd.to_numeric(df[glucose_col], errors="coerce").dropna()
+
+        avg_glucose = glucose_series.mean()
+        time_in_range = np.mean((glucose_series >= 70) & (glucose_series <= 180)) * 100
+        hypo = np.mean(glucose_series < 70) * 100
+        hyper = np.mean(glucose_series > 180) * 100
+        est_hba1c = round((avg_glucose + 46.7) / 28.7, 2)
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Average Glucose", f"{avg_glucose:.1f} mg/dL")
+        col2.metric("Estimated HbA1c", f"{est_hba1c}%")
+        col3.metric("Time in Range", f"{time_in_range:.1f}%")
+
+        st.markdown("---")
+
+        st.subheader("📋 Glucose-Based Recommendations")
+
+        if avg_glucose > 150:
+            st.error("High average glucose — review carb intake, exercise, and medications.")
+        elif avg_glucose < 80:
+            st.warning("Low glucose — possible hypoglycemia. Adjust carb intake or medication timing.")
         else:
-            st.success("Exercise duration meets the daily recommendation!")
+            st.success("✅ Glucose levels are within a healthy range!")
+
+        if time_in_range < 70:
+            st.warning("Time in range <70%. Consider reducing sugar or increasing post-meal activity.")
+        if hypo > 5:
+            st.error("Frequent low glucose events — discuss insulin or medication timing with a clinician.")
+        if hyper > 30:
+            st.error("Frequent high glucose — limit refined carbs and add aerobic activity after meals.")
+    else:
+        st.info("ℹ️ No CGM/simulation data detected. Using Home tab data for your plan.")
+        avg_glucose, est_hba1c, time_in_range = None, None, None
+
+    st.markdown("---")
+   
+
+  # ---------------- SMART MEAL CALORIE ESTIMATOR + PERSONALIZED NUTRITION ADVISOR ---------------- #
+
+
     
-        if diet_score < 10:
-            st.warning("Improve diet quality: add more vegetables, fiber, and lean protein.")
-        elif diet_score > 20:
-            st.success("Excellent diet quality — keep it up!")
+        
 
 # ===================== TAB: HOW DIABETES WORKS (D3) ===================== #
 elif selected_tab == "🔬 How Diabetes Works (Interactive)":
