@@ -1,3 +1,4 @@
+# diabetes_simulator_dashboard.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -42,7 +43,6 @@ st.markdown(
       .muted { color:#6b7280; font-size:13px; }
       .small { font-size:13px; color:#374151; }
       .metric { font-weight:600; color:#062; }
-      /* tighten table */
       .stDataFrame table { border-collapse: collapse; }
     </style>
     """,
@@ -50,7 +50,6 @@ st.markdown(
 )
 
 # ---------------- SESSION DEFAULTS ---------------- #
-# store all needed fields to avoid NameErrors later
 for key, default in {
     "cgm_data": None,
     "sim_results": {},
@@ -355,7 +354,6 @@ if selected_tab == "🏠 Home":
         for med in st.session_state.get("selected_meds", []):
             base_eff = medication_types.get(med,(0,0))[0] if diagnosis=="Diabetic" else prediabetic_meds.get(med,(0,0))[0]
             if med in meds_with_dose:
-                # dose may exist in med_doses local scope; safe-get zero if not defined
                 med_effect += base_eff * (med_doses.get(med,0) / 1000)
             else:
                 med_effect += base_eff
@@ -365,7 +363,6 @@ if selected_tab == "🏠 Home":
             med_effect *= 0.3
         if len(st.session_state.get("selected_meds", [])) > 1:
             med_effect *= 0.8
-        # add contributions from other med groups (use session_state defaults)
         base_glucose += 5 * len([m for m in st.session_state.get("bp_meds", []) if m != "None"])
         base_glucose += 7 * len([m for m in st.session_state.get("chol_meds", []) if m != "None"])
         base_glucose += 12 * len([m for m in st.session_state.get("steroid_meds", []) if m != "None"])
@@ -562,7 +559,6 @@ elif selected_tab == "📝 Action Plan":
 
     # Start timer — client-side JS gives live ticking:
     if st.button("▶️ Start Exercise Timer"):
-        # store minimal metadata
         st.session_state["exercise_timer"] = {
             "exercise": ex_choice,
             "duration_min": int(preset),
@@ -682,3 +678,5 @@ elif selected_tab == "🔬 How Diabetes Works (Interactive)":
     </html>
     """
     components.html(d3_html, height=680, scrolling=True)
+
+# End of file
