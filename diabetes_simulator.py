@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 import streamlit.components.v1 as components
 import re
 
-# Optional helper for auto-refresh used by timer. If not installed, the app still runs.
 try:
     from streamlit_autorefresh import st_autorefresh
 except Exception:
@@ -18,32 +17,95 @@ except Exception:
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(page_title="Digital Diabetes Simulator", layout="wide", page_icon="💉")
 
-# ---------------- THEME & STYLES ---------------- #
+# ---------------- IMPROVED VISUAL THEME ---------------- #
 st.markdown(
     """
     <style>
-      /* page background */
+      /* App background */
       .stApp {
-        background: #f1f3f5;
+        background: linear-gradient(180deg, #f4f5f7 0%, #eceff1 100%);
+        color: #1a1a1a;
       }
-      /* card style */
+
+      /* Card design */
       .card {
         background: #ffffff;
-        padding: 18px;
-        border-radius: 10px;
-        box-shadow: 0 6px 18px rgba(18, 32, 59, 0.06);
-        transition: transform 180ms ease, box-shadow 180ms ease;
-        margin-bottom: 16px;
+        border-radius: 14px;
+        padding: 24px 26px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(230, 230, 230, 0.9);
+        transition: all 0.25s ease;
       }
+
+      /* Hover animation */
       .card:hover {
         transform: translateY(-6px);
-        box-shadow: 0 14px 40px rgba(18,32,59,0.12);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+        border-color: rgba(200, 200, 200, 0.8);
       }
-      .section-title { font-size: 18px; font-weight:700; color:#0f1724; margin-bottom:6px; }
-      .muted { color:#6b7280; font-size:13px; }
-      .small { font-size:13px; color:#374151; }
-      .metric { font-weight:600; color:#062; }
-      .stDataFrame table { border-collapse: collapse; }
+
+      /* Section titles */
+      .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0d1b2a;
+        margin-bottom: 12px;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+      }
+
+      /* Muted text */
+      .muted {
+        color: #6b7280;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      /* Metric highlights */
+      .metric {
+        font-weight: 600;
+        color: #00796b;
+      }
+
+      /* Inputs and widgets styling */
+      div[data-baseweb="select"], input, textarea {
+        border-radius: 6px !important;
+      }
+
+      /* Buttons */
+      .stButton>button {
+        background: linear-gradient(90deg, #2b5876 0%, #4e4376 100%);
+        color: #fff;
+        border-radius: 8px;
+        padding: 0.5em 1.2em;
+        font-weight: 600;
+        border: none;
+        transition: all 0.25s ease;
+      }
+
+      .stButton>button:hover {
+        transform: scale(1.03);
+        background: linear-gradient(90deg, #3c6e91 0%, #5c51a0 100%);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Sidebar */
+      section[data-testid="stSidebar"] {
+        background-color: #fafafa;
+        border-right: 1px solid #e0e0e0;
+      }
+
+      /* Table refinement */
+      .stDataFrame table {
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      /* Titles and headers */
+      h1, h2, h3 {
+        color: #0f1724;
+        font-weight: 700;
+      }
     </style>
     """,
     unsafe_allow_html=True,
