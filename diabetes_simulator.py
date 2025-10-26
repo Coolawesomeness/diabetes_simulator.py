@@ -668,6 +668,7 @@ elif selected_tab == "📝 Action Plan":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">💡 Lifestyle Insights</div>', unsafe_allow_html=True)
     diet_score = st.session_state.get("diet_score", 0)
+    sleep_hours = st.slider("Average Sleep (hours/night)", 3, 12, 7)
     if diet_score < 10:
         st.warning("Diet quality low — increase vegetables, reduce sugary snacks and fast food.")
     else:
